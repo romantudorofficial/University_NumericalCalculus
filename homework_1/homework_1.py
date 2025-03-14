@@ -48,12 +48,7 @@ def solveTaskTwoPartOne ():
     difference = abs(left_side - right_side)
     epsilon = np.finfo(float).eps
 
-    print(f"(x + y) + z = {left_side:.20f}")
-    print(f"x + (y + z) = {right_side:.20f}")
-    print(f"Difference = {difference:.20f}")
-    print(f"Epsilon = {epsilon:.20f}")
-
-    if difference > epsilon:
+    if difference != epsilon:
         return True
     
     return False
@@ -79,7 +74,7 @@ def getSolutionForTaskTwo ():
     part_1 = solveTaskTwoPartOne()
     part_2 = solveTaskTwoPartTwo()
 
-    result = f"Part 1 = {part_1}\n Part 2 = {part_2}"
+    result = f"Part 1: {part_1}\nPart 2: {part_2}"
 
     messagebox.showinfo("Task 2", result)
 
@@ -94,10 +89,6 @@ c4 = 1 / math.factorial(9)
 c5 = 1 / math.factorial(11)
 c6 = 1 / math.factorial(13)
 
-n_points = 10000
-xs = np.random.uniform(-math.pi / 2, math.pi / 2, n_points)
-sin_exact = np.sin(xs)
-
 
 def P1 (x):
 
@@ -111,8 +102,8 @@ def P1 (x):
 
 def P2 (x):
 
-    # P2(x) = x - c1*x^3 + c2*x^5 - c3*x^7 
-    # Horner: P2(x) = x*(1 + y*(-c1 + y*(c2 - c3*y))) , with y=x^2
+    # P2(x) = x - c1 * x^3 + c2 * x^5 - c3 * x^7 
+    # Horner: P2(x) = x * (1 + y * (-c1 + y * (c2 - c3 * y))) , with y = x^2
 
     y = x * x
 
@@ -121,8 +112,8 @@ def P2 (x):
 
 def P3 (x):
 
-    # P3(x) = x - c1*x^3 + c2*x^5 - c3*x^7 + c4*x^9 
-    # Horner: P3(x) = x*(1 + y*(-c1 + y*(c2 + y*(-c3 + c4*y))))
+    # P3(x) = x - c1 * x^3 + c2 * x^5 - c3 * x^7 + c4 * x^9 
+    # Horner: P3(x) = x * (1 + y * (-c1 + y * (c2 + y * (-c3 + c4 * y))))
 
     y = x * x
 
@@ -131,7 +122,7 @@ def P3 (x):
 
 def P4 (x):
 
-    # P4(x) = x - 0.166*x^3 + 0.00833*x^5 - c3*x^7 + c4*x^9
+    # P4(x) = x - 0.166 * x^3 + 0.00833 * x^5 - c3 * x^7 + c4 * x^9
     # Using the approximated coefficients for x^3 and x^5.
 
     y = x * x
@@ -141,7 +132,7 @@ def P4 (x):
 
 def P5 (x):
 
-    # P5(x) = x - 0.1666*x^3 + 0.008333*x^5 - c3*x^7 + c4*x^9
+    # P5(x) = x - 0.1666 * x^3 + 0.008333 * x^5 - c3 * x^7 + c4 * x^9
 
     y = x * x
 
@@ -150,7 +141,7 @@ def P5 (x):
 
 def P6 (x):
 
-    # P6(x) = x - 0.16666*x^3 + 0.0083333*x^5 - c3*x^7 + c4*x^9
+    # P6(x) = x - 0.16666 * x^3 + 0.0083333 * x^5 - c3 * x^7 + c4 * x^9
 
     y = x * x
 
@@ -176,7 +167,8 @@ def P8 (x):
 
     return x * (1 + y * (-c1 + y * (c2 + y * (-c3 + y * (c4 + y * (-c5 + c6 * y))))))
 
-# List of polynomial functions and their names for reference
+
+# List of polynomial functions and their names.
 polynomials = [P1, P2, P3, P4, P5, P6, P7, P8]
 poly_names = ["P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8"]
 
@@ -190,6 +182,7 @@ def solveTaskThree ():
     times = []
     
     for poly in polynomials:
+
         start_time = time.time()
         poly_values = poly(x_values)
         elapsed_time = time.time() - start_time
@@ -199,13 +192,13 @@ def solveTaskThree ():
 
     errors = np.array(errors)
 
-    best_polynomials = np.argsort(errors, axis=0)[:3]
+    best_polynomials = np.argsort(errors, axis = 0)[:3]
 
-    best_counts = np.bincount(best_polynomials[0], minlength=8)
-    second_best_counts = np.bincount(best_polynomials[1], minlength=8)
-    third_best_counts = np.bincount(best_polynomials[2], minlength=8)
+    best_counts = np.bincount(best_polynomials[0], minlength = 8)
+    second_best_counts = np.bincount(best_polynomials[1], minlength = 8)
+    third_best_counts = np.bincount(best_polynomials[2], minlength = 8)
 
-    total_errors = np.sum(errors, axis=1)
+    total_errors = np.sum(errors, axis = 1)
     ranking = np.argsort(total_errors)
 
     time_ranking = np.argsort(times)
@@ -213,10 +206,12 @@ def solveTaskThree ():
     result = "Polynomial Approximation Results:\n\n"
 
     result += "Hierarchy of polynomials (best approximations count):\n"
+
     for i in ranking:
         result += f"{poly_names[i]} (best: {best_counts[i]}, second: {second_best_counts[i]}, third: {third_best_counts[i]})\n"
     
     result += "\nExecution times (sorted in ascending order):\n"
+    
     for i in time_ranking:
         result += f"{poly_names[i]}: {times[i]:.6f} s\n"
 
