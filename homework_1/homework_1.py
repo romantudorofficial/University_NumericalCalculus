@@ -16,10 +16,10 @@ def solveTaskOne ():
 
     m = 1
 
-    while 1 + 10 ** -m == 1:
+    while 1 + 10 ** -m != 1:
         m += 1
 
-    return 10 ** -m
+    return 10 ** (-m + 1)
 
 
 def getSolutionForTaskOne ():
@@ -45,10 +45,7 @@ def solveTaskTwoPartOne ():
     left_side = (x + y) + z
     right_side = x + (y + z)
 
-    difference = abs(left_side - right_side)
-    epsilon = np.finfo(float).eps
-
-    if difference != epsilon:
+    if left_side != right_side:
         return True
     
     return False
@@ -211,7 +208,7 @@ def solveTaskThree ():
         result += f"{poly_names[i]} (best: {best_counts[i]}, second: {second_best_counts[i]}, third: {third_best_counts[i]})\n"
     
     result += "\nExecution times (sorted in ascending order):\n"
-    
+
     for i in time_ranking:
         result += f"{poly_names[i]}: {times[i]:.6f} s\n"
 
