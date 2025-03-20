@@ -1,6 +1,7 @@
 '''
     Homework 2
 '''
+
 import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 import numpy as np
@@ -63,7 +64,9 @@ def compute_determinant(A, dU):
     detU = np.prod(dU)
     return detL * detU
 
-def run_inplace_version(A_init, b, dU, eps):
+
+
+def run_inplace_version (A_init, b, dU, eps):
     n = A_init.shape[0]
     A = A_init.copy()  # copy to preserve original
     lu_decomposition_inplace(A, dU, eps)
@@ -83,19 +86,29 @@ def run_inplace_version(A_init, b, dU, eps):
               f"Solution x (in-place):\n{x_LU}\n")
     return result
 
+
+
 # ----- Bonus (Memory-Restricted) Functions -----
 
-def idx_lower(i, j):
+def idx_lower (i, j):
+
     return i*(i+1)//2 + j
 
-def idx_upper(i, j, n):
+
+
+def idx_upper (i, j, n):
+
     return (i * n - (i*(i-1))//2) + (j - i)
 
-def lu_decomposition_bonus(A, dU, eps):
+
+
+def lu_decomposition_bonus (A, dU, eps):
+
     n = A.shape[0]
     size = n*(n+1)//2
     L_vec = np.zeros(size)
     U_vec = np.zeros(size)
+
     for p in range(n):
         for j in range(p):
             sum_LU = 0.0
@@ -119,19 +132,28 @@ def lu_decomposition_bonus(A, dU, eps):
             U_val = (A[p, j] - sum_LU) / L_diag
             U_vec[idx_upper(p, j, n)] = U_val
         U_vec[idx_upper(p, p, n)] = dU[p]
+
     return L_vec, U_vec
 
-def forward_substitution_bonus(L_vec, b, n):
+
+
+def forward_substitution_bonus (L_vec, b, n):
+
     y = np.zeros(n)
     for i in range(n):
         s = 0.0
         for j in range(i):
             s += L_vec[idx_lower(i, j)] * y[j]
         y[i] = (b[i] - s) / L_vec[idx_lower(i, i)]
+
     return y
 
-def backward_substitution_bonus(U_vec, dU, y, n):
+
+
+def backward_substitution_bonus (U_vec, dU, y, n):
+
     x = np.zeros(n)
+
     for i in reversed(range(n)):
         s = 0.0
         for j in range(i+1, n):
@@ -139,104 +161,128 @@ def backward_substitution_bonus(U_vec, dU, y, n):
         if abs(dU[i]) < 1e-15:
             raise ValueError(f"Zero pivot encountered in U at index {i}")
         x[i] = (y[i] - s) / dU[i]
+
     return x
 
-def reconstruct_LU(L_vec, U_vec, dU, n):
+
+
+def reconstruct_LU (L_vec, U_vec, dU, n):
+
     L_full = np.zeros((n, n))
     U_full = np.zeros((n, n))
+
     for i in range(n):
         for j in range(i+1):
             L_full[i, j] = L_vec[idx_lower(i, j)]
         for j in range(i, n):
             U_full[i, j] = dU[i] if i == j else U_vec[idx_upper(i, j, n)]
+
     LU = L_full @ U_full
+
     return LU
 
-def run_bonus_version(A, b, dU, eps):
+
+
+def run_bonus_version (A, b, dU, eps):
+
     n = A.shape[0]
     L_vec, U_vec = lu_decomposition_bonus(A, dU, eps)
     y = forward_substitution_bonus(L_vec, b, n)
     x_LU_bonus = backward_substitution_bonus(U_vec, dU, y, n)
     LU_prod = reconstruct_LU(L_vec, U_vec, dU, n)
     diff_norm = np.linalg.norm(A - LU_prod, 2)
+
     result = (f"--- Bonus LU (Memory-Restricted) ---\n"
               f"Solution x (bonus version):\n{x_LU_bonus}\n"
               f"Reconstructed LU product (should approximate A):\n{LU_prod}\n"
               f"||A - L*U|| = {diff_norm:.2e}\n")
+    
     return result
 
-# ------------------ Tkinter GUI ------------------
+
 
 class LUApp:
-    def __init__(self, master):
+
+    def __init__ (self, master):
+
         self.master = master
-        master.title("LU Decomposition and Linear System Solver")
+        master.title("Homework 2")
         
-        # Create a frame for options
-        options_frame = ttk.LabelFrame(master, text="Options", padding=10)
-        options_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        # Create a frame for the options.
+        options_frame = ttk.LabelFrame(master, text = "Options", padding = 10)
+        options_frame.grid(row = 0, column = 0, sticky = "nsew", padx = 10, pady = 10)
         
         # System type: Default, Manual, Random
-        self.system_type = tk.StringVar(value="default")
-        ttk.Label(options_frame, text="System Type:").grid(row=0, column=0, sticky="w")
-        ttk.Radiobutton(options_frame, text="Default", variable=self.system_type, value="default", command=self.toggle_system_input).grid(row=0, column=1, sticky="w")
-        ttk.Radiobutton(options_frame, text="Manual", variable=self.system_type, value="manual", command=self.toggle_system_input).grid(row=0, column=2, sticky="w")
-        ttk.Radiobutton(options_frame, text="Random", variable=self.system_type, value="random", command=self.toggle_system_input).grid(row=0, column=3, sticky="w")
+        self.system_type = tk.StringVar(value = "default")
+        ttk.Label(options_frame, text = "System Type:").grid(row = 0, column = 0, sticky = "w")
+        ttk.Radiobutton(options_frame, text = "Default", variable = self.system_type, value = "default", command = self.toggle_system_input).grid(row = 0, column = 1, sticky = "w")
+        ttk.Radiobutton(options_frame, text = "Manual", variable = self.system_type, value = "manual", command = self.toggle_system_input).grid(row = 0, column = 2, sticky = "w")
+        ttk.Radiobutton(options_frame, text = "Random", variable = self.system_type, value = "random", command = self.toggle_system_input).grid(row = 0, column = 3, sticky = "w")
         
         # Dimension n and precision eps:
-        ttk.Label(options_frame, text="Dimension n:").grid(row=1, column=0, sticky="w")
-        self.n_entry = ttk.Entry(options_frame, width=10)
-        self.n_entry.grid(row=1, column=1, sticky="w")
+        ttk.Label(options_frame, text = "Dimension n:").grid(row = 1, column = 0, sticky = "w")
+        self.n_entry = ttk.Entry(options_frame, width = 10)
+        self.n_entry.grid(row = 1, column = 1, sticky = "w")
         self.n_entry.insert(0, "3")
         
-        ttk.Label(options_frame, text="Precision eps:").grid(row=1, column=2, sticky="w")
-        self.eps_entry = ttk.Entry(options_frame, width=10)
-        self.eps_entry.grid(row=1, column=3, sticky="w")
+        ttk.Label(options_frame, text = "Precision eps:").grid(row = 1, column = 2, sticky = "w")
+        self.eps_entry = ttk.Entry(options_frame, width = 10)
+        self.eps_entry.grid(row = 1, column = 3, sticky = "w")
         self.eps_entry.insert(0, "1e-8")
         
         # LU method selection:
-        ttk.Label(options_frame, text="LU Method:").grid(row=2, column=0, sticky="w")
-        self.method = tk.StringVar(value="inplace")
+        ttk.Label(options_frame, text = "LU Method:").grid(row = 2, column = 0, sticky = "w")
+        self.method = tk.StringVar(value = "inplace")
         method_menu = ttk.OptionMenu(options_frame, self.method, "inplace", "inplace", "bonus")
-        method_menu.grid(row=2, column=1, sticky="w")
+        method_menu.grid(row = 2, column = 1, sticky = "w")
         
         # Frame for matrix and vector input (only for manual)
-        self.input_frame = ttk.LabelFrame(master, text="Input Matrix A and Vector b", padding=10)
-        self.input_frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        self.input_frame = ttk.LabelFrame(master, text = "Input Matrix A and Vector b", padding = 10)
+        self.input_frame.grid(row = 1, column = 0, sticky = "nsew", padx = 10, pady = 10)
         
-        ttk.Label(self.input_frame, text="Matrix A (rows separated by newlines, entries by spaces):").grid(row=0, column=0, sticky="w")
-        self.A_text = scrolledtext.ScrolledText(self.input_frame, width=50, height=5)
-        self.A_text.grid(row=1, column=0, pady=5)
+        ttk.Label(self.input_frame, text = "Matrix A (rows separated by newlines, entries by spaces):").grid(row = 0, column = 0, sticky = "w")
+        self.A_text = scrolledtext.ScrolledText(self.input_frame, width = 50, height = 5)
+        self.A_text.grid(row = 1, column = 0, pady = 5)
         
-        ttk.Label(self.input_frame, text="Vector b (entries separated by spaces):").grid(row=2, column=0, sticky="w")
-        self.b_entry = ttk.Entry(self.input_frame, width=50)
-        self.b_entry.grid(row=3, column=0, pady=5)
+        ttk.Label(self.input_frame, text = "Vector b (entries separated by spaces):").grid(row = 2, column = 0, sticky = "w")
+        self.b_entry = ttk.Entry(self.input_frame, width = 50)
+        self.b_entry.grid(row = 3, column = 0, pady = 5)
         
         # Button to solve the system:
-        self.solve_button = ttk.Button(master, text="Solve", command=self.solve)
-        self.solve_button.grid(row=2, column=0, padx=10, pady=10)
+        self.solve_button = ttk.Button(master, text = "Solve", command = self.solve)
+        self.solve_button.grid(row = 2, column = 0, padx = 10, pady = 10)
         
         # Text area for displaying results:
-        self.result_text = scrolledtext.ScrolledText(master, width=80, height=20)
-        self.result_text.grid(row=3, column=0, padx=10, pady=10)
+        self.result_text = scrolledtext.ScrolledText(master, width = 80, height = 20)
+        self.result_text.grid(row = 3, column = 0, padx = 10, pady = 10)
         
         self.toggle_system_input()  # initialize input state
         
-    def toggle_system_input(self):
-        """Show or hide the manual input fields based on system type."""
+
+    def toggle_system_input (self):
+
+        '''
+            Show or hide the manual input fields based on system type.
+        '''
+
         sys_type = self.system_type.get()
+
         if sys_type == "manual":
             self.input_frame.grid()
         else:
             self.input_frame.grid_remove()
     
-    def parse_manual_input(self, n):
+
+    def parse_manual_input (self, n):
+
         try:
+
             # Parse matrix A from text box
             A_str = self.A_text.get("1.0", tk.END).strip()
             rows = A_str.splitlines()
             if len(rows) != n:
                 raise ValueError(f"Expected {n} rows in A, got {len(rows)}.")
+            
             A = []
             for row in rows:
                 entries = row.split()
@@ -244,47 +290,68 @@ class LUApp:
                     raise ValueError(f"Each row must have {n} entries.")
                 A.append([float(x) for x in entries])
             A = np.array(A)
+            
             # Parse vector b:
             b_str = self.b_entry.get().strip()
             b_entries = b_str.split()
+            
             if len(b_entries) != n:
                 raise ValueError(f"Vector b must have {n} entries.")
+            
             b = np.array([float(x) for x in b_entries])
+            
             return A, b
+        
         except Exception as e:
+            
             messagebox.showerror("Input Error", str(e))
+            
             return None, None
 
-    def solve(self):
+
+    def solve (self):
+
         try:
             n = int(self.n_entry.get())
             eps = float(self.eps_entry.get())
+
         except ValueError:
             messagebox.showerror("Input Error", "Please enter valid numbers for n and eps.")
             return
         
         sys_type = self.system_type.get()
+
         if sys_type == "default":
+
             # Default example from assignment
             A_init = np.array([[4.0, 2.0, 3.0],
                                [2.0, 7.0, 5.5],
                                [6.0, 3.0, 12.5]])
             b = np.array([21.6, 33.6, 51.6])
             dU = np.array([2.0, 3.0, 4.0])
+
         elif sys_type == "manual":
+
             A_init, b = self.parse_manual_input(n)
+
             if A_init is None:
                 return
+            
             # For manual input, let’s ask the user to input U's diagonal (dU) too:
             dU_str = tk.simpledialog.askstring("Input", f"Enter U's diagonal dU (space separated {n} values):")
+
             if not dU_str:
                 messagebox.showerror("Input Error", "No dU provided.")
                 return
+            
             dU_entries = dU_str.split()
+
             if len(dU_entries) != n:
                 messagebox.showerror("Input Error", f"Expected {n} values for dU.")
                 return
+            
             dU = np.array([float(x) for x in dU_entries])
+
         else:  # random
             A_init = np.random.rand(n, n) * 10
             b = np.random.rand(n) * 10
@@ -303,7 +370,15 @@ class LUApp:
         except Exception as e:
             messagebox.showerror("Error during computation", str(e))
 
+
+
 if __name__ == "__main__":
+
+    # Create the GUI.
     root = tk.Tk()
+
+    # Create the application.
     app = LUApp(root)
+
+    # Start the GUI.
     root.mainloop()
