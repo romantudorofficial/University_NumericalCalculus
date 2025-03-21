@@ -3,30 +3,45 @@
 '''
 
 import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
+from tkinter import ttk, messagebox, scrolledtext, simpledialog
 import numpy as np
-from tkinter import simpledialog
+
+
 
 # ------------------ LU Decomposition Functions ------------------
 
-def lu_decomposition_inplace(A, dU, eps):
+def lu_decomposition_inplace (A, dU, eps):  # decompose A into L and U
+
     n = A.shape[0]
+
     for p in range(n):
+
+        # Store L in the lower triangular part of A
+
         # Compute L[p, j] for j=0,...,p-1
         for j in range(p):
+
             sum_LU = 0.0
             for k in range(j):
                 sum_LU += A[p, k] * A[k, j]
+
             if abs(dU[j]) < eps:
                 raise ValueError(f"Zero pivot encountered in U at index {j}")
+            
             A[p, j] = (A[p, j] - sum_LU) / dU[j]
+
         # Compute L[p, p] diagonal:
         sum_LU = 0.0
         for k in range(p):
             sum_LU += A[p, k] * A[k, p]
+
         A[p, p] = A[p, p] - sum_LU
+
         if abs(A[p, p]) < eps:
             raise ValueError(f"Zero pivot encountered in L at index {p}")
+        
+        # Store U in the upper triangular part of A
+
         # Compute U[p, j] for j = p+1,..., n-1:
         for j in range(p+1, n):
             sum_LU = 0.0
@@ -34,56 +49,85 @@ def lu_decomposition_inplace(A, dU, eps):
                 sum_LU += A[p, k] * A[k, j]
             A[p, j] = (A[p, j] - sum_LU) / A[p, p]
             
-def forward_substitution(A, b):
-    n = A.shape[0]
-    y = np.zeros(n)
-    for i in range(n):
+
+
+def forward_substitution (A, b):
+
+    n = A.shape[0] # matrix size
+    y = np.zeros(n) # Initialize y (solution)
+
+    for i in range(n): # Iterate from 0 to n-1
         s = 0.0
         for j in range(i):
-            s += A[i, j] * y[j]
-        y[i] = (b[i] - s) / A[i, i]
+            s += A[i, j] * y[j] # Compute sum of known values
+
+        y[i] = (b[i] - s) / A[i, i] # Compute y[i] using the formula
+
     return y
 
-def backward_substitution(A, dU, y):
-    n = A.shape[0]
-    x = np.zeros(n)
-    for i in reversed(range(n)):
+
+
+def backward_substitution (A, dU, y):
+
+    n = A.shape[0]  # matrix size
+    x = np.zeros(n) # Initialize x (solution)
+
+    for i in reversed(range(n)): # Iterate backwards from n-1 to 0
+
         s = 0.0
         for j in range(i+1, n):
-            s += A[i, j] * x[j]
+            s += A[i, j] * x[j] # Compute sum of known values
+
         if abs(dU[i]) < 1e-15:
-            raise ValueError(f"Zero pivot encountered in U at index {i}")
-        x[i] = (y[i] - s) / dU[i]
+            raise ValueError(f"Zero pivot encountered in U at index {i}") # Check for zero values in the diagonal
+        
+        x[i] = (y[i] - s) / dU[i] # Compute x[i] using the formula
+
     return x
 
-def compute_determinant(A, dU):
+
+
+def compute_determinant (A, dU):
+
     n = A.shape[0]
     detL = 1.0
+
     for i in range(n):
         detL *= A[i, i]
+
     detU = np.prod(dU)
+
     return detL * detU
 
 
 
 def run_inplace_version (A_init, b, dU, eps):
-    n = A_init.shape[0]
-    A = A_init.copy()  # copy to preserve original
-    lu_decomposition_inplace(A, dU, eps)
-    detA = compute_determinant(A, dU)
-    y = forward_substitution(A, b)
-    x_LU = backward_substitution(A, dU, y)
-    res_norm = np.linalg.norm(A_init @ x_LU - b, 2)
-    x_lib = np.linalg.solve(A_init, b)
-    A_inv_lib = np.linalg.inv(A_init)
-    diff1 = np.linalg.norm(x_LU - x_lib, 2)
-    diff2 = np.linalg.norm(x_LU - A_inv_lib @ b, 2)
+
+    n = A_init.shape[0] # matrix size
+    A = A_init.copy()  # create a copy for modification
+
+    lu_decomposition_inplace(A, dU, eps) # Perform LU Decomposition
+
+    detA = compute_determinant(A, dU) # Compute determinant
+
+    y = forward_substitution(A, b)  # Solves the lower triangular system Ly = b
+    x_LU = backward_substitution(A, dU, y) # Solves the upper triangular system Ux = y
+
+    x_lib = np.linalg.solve(A_init, b)  # Compute solution using library function
+    A_inv_lib = np.linalg.inv(A_init)  # Compute A inverse
+
+    diff1 = np.linalg.norm(x_LU - x_lib, 2) # Compute difference between x_LU and x_lib
+    diff2 = np.linalg.norm(x_LU - A_inv_lib @ b, 2) # Compute difference between x_LU and A_inv_lib @ b
+
+    print(A)
+
     result = (f"--- In-Place LU Decomposition ---\n"
               f"Determinant of A = {detA:.6f}\n"
-              f"Residual norm ||A*x - b|| = {res_norm:.2e}\n"
               f"||x_LU - x_lib|| = {diff1:.2e}\n"
-              f"||x_LU - A_inv_lib*b|| = {diff2:.2e}\n"
-              f"Solution x (in-place):\n{x_LU}\n")
+              f"||x_LU - A_inv_lib*b|| = {diff2:.2e}\n\n"
+              f"Solution x_LU (Computed using LU Decomposition):\n{x_LU}\n\n"
+              f"Inverse of A (A⁻¹):\n{A_inv_lib}\n")  # Display inverse
+
     return result
 
 
@@ -92,25 +136,28 @@ def run_inplace_version (A_init, b, dU, eps):
 
 def idx_lower (i, j):
 
-    return i*(i+1)//2 + j
+    # Computes the 1D index for storing the lower triangular part of an n x n matrix
+    return i*(i+1)//2 + j   # Compute index for lower triangular matrix
 
 
 
 def idx_upper (i, j, n):
 
-    return (i * n - (i*(i-1))//2) + (j - i)
+    # Computes the 1D index for storing the upper triangular part of an n x n matrix
+    return (i * n - (i*(i-1))//2) + (j - i) # Compute index for upper triangular matrix
 
 
 
 def lu_decomposition_bonus (A, dU, eps):
 
     n = A.shape[0]
-    size = n*(n+1)//2
-    L_vec = np.zeros(size)
-    U_vec = np.zeros(size)
+    size = n*(n+1)//2 # Size of 1D array to store L and U
+    L_vec = np.zeros(size) # Store L in a 1D array
+    U_vec = np.zeros(size) # Store U in a 1D array
 
-    for p in range(n):
-        for j in range(p):
+    for p in range(n): 
+
+        for j in range(p): # Compute L[p, j] for j=0,...,p-1
             sum_LU = 0.0
             for k in range(j):
                 sum_LU += L_vec[idx_lower(p, k)] * U_vec[idx_upper(k, j, n)]
@@ -118,6 +165,8 @@ def lu_decomposition_bonus (A, dU, eps):
                 raise ValueError(f"Zero pivot encountered in U at index {j}")
             L_val = (A[p, j] - sum_LU) / dU[j]
             L_vec[idx_lower(p, j)] = L_val
+
+        # Compute L[p, p] diagonal:
         sum_LU = 0.0
         for k in range(p):
             sum_LU += L_vec[idx_lower(p, k)] * U_vec[idx_upper(k, p, n)]
@@ -125,6 +174,8 @@ def lu_decomposition_bonus (A, dU, eps):
         if abs(L_diag) < eps:
             raise ValueError(f"Zero pivot encountered in L at index {p}")
         L_vec[idx_lower(p, p)] = L_diag
+
+        # Compute U[p, j] for j = p+1,..., n-1:
         for j in range(p+1, n):
             sum_LU = 0.0
             for k in range(p):
@@ -155,29 +206,32 @@ def backward_substitution_bonus (U_vec, dU, y, n):
     x = np.zeros(n)
 
     for i in reversed(range(n)):
+
         s = 0.0
         for j in range(i+1, n):
-            s += U_vec[idx_upper(i, j, n)] * x[j]
+            s += U_vec[idx_upper(i, j, n)] * x[j] # Compute sum of known values
+
         if abs(dU[i]) < 1e-15:
             raise ValueError(f"Zero pivot encountered in U at index {i}")
-        x[i] = (y[i] - s) / dU[i]
+        
+        x[i] = (y[i] - s) / dU[i] # Compute x[i] using the formula
 
     return x
 
 
-
+# Reconstruct the original matrix A from L and U
 def reconstruct_LU (L_vec, U_vec, dU, n):
 
-    L_full = np.zeros((n, n))
-    U_full = np.zeros((n, n))
+    L_full = np.zeros((n, n)) # Initialize L matrix
+    U_full = np.zeros((n, n)) # Initialize U matrix
 
     for i in range(n):
         for j in range(i+1):
-            L_full[i, j] = L_vec[idx_lower(i, j)]
+            L_full[i, j] = L_vec[idx_lower(i, j)] 
         for j in range(i, n):
             U_full[i, j] = dU[i] if i == j else U_vec[idx_upper(i, j, n)]
 
-    LU = L_full @ U_full
+    LU = L_full @ U_full # Compute the product of L and U to get A
 
     return LU
 
@@ -185,18 +239,21 @@ def reconstruct_LU (L_vec, U_vec, dU, n):
 
 def run_bonus_version (A, b, dU, eps):
 
-    n = A.shape[0]
-    L_vec, U_vec = lu_decomposition_bonus(A, dU, eps)
-    y = forward_substitution_bonus(L_vec, b, n)
-    x_LU_bonus = backward_substitution_bonus(U_vec, dU, y, n)
-    LU_prod = reconstruct_LU(L_vec, U_vec, dU, n)
-    diff_norm = np.linalg.norm(A - LU_prod, 2)
+    n = A.shape[0]  # matrix size
+    L_vec, U_vec = lu_decomposition_bonus(A, dU, eps) # Perform LU Decomposition
+    y = forward_substitution_bonus(L_vec, b, n) # Solve the lower triangular system Ly = b
+    x_LU_bonus = backward_substitution_bonus(U_vec, dU, y, n) # Solve the upper triangular system Ux = y
+    LU_prod = reconstruct_LU(L_vec, U_vec, dU, n) # Reconstruct A from L and U
+    diff_norm = np.linalg.norm(A - LU_prod, 2) # Compute the difference between A and LU_prod
+    
+    A_inv_lib = np.linalg.inv(A)  # Compute A inverse
 
     result = (f"--- Bonus LU (Memory-Restricted) ---\n"
-              f"Solution x (bonus version):\n{x_LU_bonus}\n"
+              f"Solution x_LU (Computed using LU Decomposition):\n{x_LU_bonus}\n\n"
               f"Reconstructed LU product (should approximate A):\n{LU_prod}\n"
-              f"||A - L*U|| = {diff_norm:.2e}\n")
-    
+              f"||A - L*U|| = {diff_norm:.2e}\n\n"
+              f"Inverse of A (A⁻¹):\n{A_inv_lib}\n")
+
     return result
 
 
