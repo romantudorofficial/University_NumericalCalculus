@@ -1,5 +1,7 @@
 '''
     Homework 2
+    Bibliography: ChatGPT, Lecture Notes
+    LLM Percentile: 40%
 '''
 
 import tkinter as tk
@@ -8,17 +10,15 @@ import numpy as np
 
 
 
-# ------------------ LU Decomposition Functions ------------------
-
-def lu_decomposition_inplace (A, dU, eps):  # decompose A into L and U
+def lu_decomposition_inplace (A, dU, eps):
 
     n = A.shape[0]
 
     for p in range(n):
 
-        # Store L in the lower triangular part of A
+        # Store L in the lower triangular part of A:
 
-        # Compute L[p, j] for j=0,...,p-1
+        # Compute L[p, j] for j = 0, ..., p-1
         for j in range(p):
 
             sum_LU = 0.0
@@ -40,9 +40,9 @@ def lu_decomposition_inplace (A, dU, eps):  # decompose A into L and U
         if abs(A[p, p]) < eps:
             raise ValueError(f"Zero pivot encountered in L at index {p}")
         
-        # Store U in the upper triangular part of A
+        # Store U in the upper triangular part of A:
 
-        # Compute U[p, j] for j = p+1,..., n-1:
+        # Compute U[p, j] for j = p + 1, ..., n - 1:
         for j in range(p+1, n):
             sum_LU = 0.0
             for k in range(p):
@@ -132,12 +132,10 @@ def run_inplace_version (A_init, b, dU, eps):
 
 
 
-# ----- Bonus (Memory-Restricted) Functions -----
-
 def idx_lower (i, j):
 
     # Computes the 1D index for storing the lower triangular part of an n x n matrix
-    return i*(i+1)//2 + j   # Compute index for lower triangular matrix
+    return i * (i + 1) // 2 + j   # Compute index for lower triangular matrix
 
 
 
@@ -157,7 +155,7 @@ def lu_decomposition_bonus (A, dU, eps):
 
     for p in range(n): 
 
-        for j in range(p): # Compute L[p, j] for j=0,...,p-1
+        for j in range(p): # Compute L[p, j] for j = 0, ..., p - 1
             sum_LU = 0.0
             for k in range(j):
                 sum_LU += L_vec[idx_lower(p, k)] * U_vec[idx_upper(k, j, n)]
@@ -175,7 +173,7 @@ def lu_decomposition_bonus (A, dU, eps):
             raise ValueError(f"Zero pivot encountered in L at index {p}")
         L_vec[idx_lower(p, p)] = L_diag
 
-        # Compute U[p, j] for j = p+1,..., n-1:
+        # Compute U[p, j] for j = p + 1, ..., n - 1:
         for j in range(p+1, n):
             sum_LU = 0.0
             for k in range(p):
@@ -219,9 +217,11 @@ def backward_substitution_bonus (U_vec, dU, y, n):
     return x
 
 
-# Reconstruct the original matrix A from L and U
+
 def reconstruct_LU (L_vec, U_vec, dU, n):
 
+    # Reconstruct the original matrix A from L and U
+    
     L_full = np.zeros((n, n)) # Initialize L matrix
     U_full = np.zeros((n, n)) # Initialize U matrix
 
@@ -258,7 +258,7 @@ def run_bonus_version (A, b, dU, eps):
 
 
 
-class LUApp:
+class Homework2:
 
     def __init__ (self, master):
 
@@ -435,7 +435,7 @@ if __name__ == "__main__":
     root = tk.Tk()
 
     # Create the application.
-    app = LUApp(root)
+    application = Homework2(root)
 
     # Start the GUI.
     root.mainloop()

@@ -1,5 +1,7 @@
 '''
     Homework 1
+    Bibliography: ChatGPT, Lecture Notes
+    LLM Percentile: 40%
 '''
 
 import tkinter as tk
