@@ -1,7 +1,7 @@
 '''
     Homework 3
     Bibliography: ChatGPT, Lecture Notes
-    LLM Percentile: 40%
+    LLM Percentile: 30%
 '''
 
 import tkinter as tk
@@ -239,7 +239,7 @@ def read_vector_from_file (filename):
             raise ValueError(f"Error parsing vector line '{line.strip()}': {e}")
         
     if len(vec) != n:
-        vec = vec[:n]  # truncate if more lines than expected
+        vec = vec[:n]
 
     return n, vec
 
@@ -277,7 +277,7 @@ def gauss_seidel (sparse_matrix, b, epsilon, kmax = 10000):
         if diff < epsilon:
             return x, iter_count
         
-    return x, iter_count  # if kmax reached
+    return x, iter_count
 
 
 

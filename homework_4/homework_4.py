@@ -1,3 +1,9 @@
+'''
+    Homework 4
+    Bibliography: ChatGPT, Lecture Notes
+    LLM Percentile: 30%
+'''
+
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import numpy as np
