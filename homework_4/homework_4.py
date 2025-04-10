@@ -17,7 +17,7 @@ def norm_mat (M, norm_type = 1):
 def initial_guess_square (A, method = 5):
 
     '''
-        Return an initial guess for the inverse of square matrix A.
+        Returns an initial guess for the inverse of square matrix A.
         method == 5: Formula (5): V0 = A^T / (||A||_∞^2)
         method == 6: Formula (6): V0 = A^T / (||A||_∞ * ||A||_1)
     '''
@@ -25,12 +25,17 @@ def initial_guess_square (A, method = 5):
     norm_inf = norm_mat(A, norm_type = np.inf)
     norm_1 = norm_mat(A, norm_type = 1)
 
+    # If the initial guess method is 5, use the fifth formula.
     if method == 5:
         return A.T / (norm_inf**2)
+    
+    # If the initial guess method is 6, use the sixth formula.
     elif method == 6:
         return A.T / (norm_inf * norm_1)
+    
+    # If the initial guess method is neither 5, nor 6, raise an error.
     else:
-        raise ValueError("Initial guess method must be 5 or 6.")
+        raise ValueError("\nThe initial guess method must be either 5 or 6.\n")
 
 
 
@@ -104,6 +109,7 @@ def iterative_inverse_avg (A, eps = 1e-6, kmax = 10000, init_method = 5):
         V_{k+1} = 0.5*(V_k + V_k*(2I - A*V_k))
     '''
 
+    # This method is similar to the Newton-Schultz method, but it averages the current and next estimates.
     n = A.shape[0]
     V = initial_guess_square(A, method = init_method)
     I = np.eye(n)
@@ -121,7 +127,8 @@ def iterative_inverse_avg (A, eps = 1e-6, kmax = 10000, init_method = 5):
 
         if diff > 1e10:
             return V, iter_count, None, "Divergence detected in Method 3!"
-        
+    
+    # Compute the residual norm ||A*V - I||.
     res_norm = norm_mat(A @ V - I)
 
     return V, iter_count, res_norm, None
@@ -134,11 +141,14 @@ def special_matrix (n):
         Constructs the n x n matrix A with diagonal entries 1 and superdiagonal entries 2.
     '''
 
+    # Initialize the matrix A with zeros. ??
     A = np.eye(n)
 
+    # Set the superdiagonal entries to 2.
     for i in range(n - 1):
         A[i, i + 1] = 2
 
+    # Get the matrix.
     return A
 
 
@@ -184,7 +194,7 @@ def iterative_pseudoinverse (A, eps = 1e-6, kmax = 10000):
 
         if norm_mat(I_n - X @ A) < eps:
             break
-        
+
         if norm_mat(X - X_old) > 1e10:
             return X, iter_count, None, "Divergence detected in Pseudoinverse method!"
         
