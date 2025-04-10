@@ -4,34 +4,42 @@ import numpy as np
 
 
 
-def norm_mat (M, norm_type = 1):
+def compute_matrix_norm (matrix, norm_type = 1):
 
     '''
         Compute the matrix norm (default 1-norm).
     '''
 
-    return np.linalg.norm(M, ord = norm_type)
+    return np.linalg.norm(matrix, ord = norm_type)
 
 
 
-def initial_guess_square (A, method = 5):
+def get_initial_square_matrix_inverse_guess (matrix, method = 5):
 
     '''
-        Returns an initial guess for the inverse of square matrix A.
-        method == 5: Formula (5): V0 = A^T / (||A||_∞^2)
-        method == 6: Formula (6): V0 = A^T / (||A||_∞ * ||A||_1)
+        Returns an initial guess for the inverse of the square matrix.
+            -> formula 5: V0 = A^T / (||A||_∞^2)
+            -> formula 6: V0 = A^T / (||A||_∞ * ||A||_1)
+        Input:
+            - matrix: square matrix A
+            - method: initial guess method (5 or 6)
+        Output:
+            - initial guess for the inverse of A
     '''
 
-    norm_inf = norm_mat(A, norm_type = np.inf)
-    norm_1 = norm_mat(A, norm_type = 1)
+    # Compute the infinity norm of the matrix A.
+    matrix_norm_infinity = compute_matrix_norm(matrix, norm_type = np.inf)
+
+    # Compute the 1-norm of the matrix A.
+    matrix_norm_one = compute_matrix_norm(matrix, norm_type = 1)
 
     # If the initial guess method is 5, use the fifth formula.
     if method == 5:
-        return A.T / (norm_inf**2)
+        return matrix.T / (matrix_norm_infinity ** 2)
     
     # If the initial guess method is 6, use the sixth formula.
     elif method == 6:
-        return A.T / (norm_inf * norm_1)
+        return matrix.T / (matrix_norm_infinity * matrix_norm_one)
     
     # If the initial guess method is neither 5, nor 6, raise an error.
     else:
@@ -39,168 +47,284 @@ def initial_guess_square (A, method = 5):
 
 
 
-def iterative_inverse_newton (A, eps = 1e-6, kmax = 10000, init_method = 5):
+def iterative_inverse_newton (matrix, eps = 1e-6, kmax = 10000, initial_guess_method = 5):
 
     '''
-        Method 1: Newton-Schultz (Hotelling-Bodewig):
-        V_{k+1} = V_k*(2I - A*V_k)
+        Computes the inverse of a square matrix A using the Newton-Schultz method.
+            -> V_{k+1} = V_k*(2I - A*V_k)
+        Input:
+            - matrix: square matrix A
+            - eps: tolerance for convergence
+            - kmax: maximum number of iterations
+            - initial_guess_method: initial guess method (either 5 or 6)
+        Output:
+            - initial_matrix_inverse_guess: approximate inverse of A
+            - number_of_iterations: number of iterations performed
+            - residual_norm: residual norm ||A*V - I||
+            - error_message: error message (if any)
     '''
 
-    n = A.shape[0]
-    V = initial_guess_square(A, method = init_method)
-    I = np.eye(n)
-    iter_count = 0
+    # Get the size of the matrix.
+    matrix_size = matrix.shape[0]
 
-    while iter_count < kmax:
+    # Get the initial guess for the inverse of the matrix.
+    initial_matrix_inverse_guess = get_initial_square_matrix_inverse_guess(matrix, method = initial_guess_method)
 
-        V_old = V.copy()
-        V = V_old @ (2 * I - A @ V_old)
-        diff = norm_mat(V - V_old)
-        iter_count += 1
+    # Create the identity matrix.
+    identity_matrix = np.eye(matrix_size)
 
-        if diff < eps:
+    # Initialize the iteration count.
+    number_of_iterations = 0
+
+    while number_of_iterations < kmax:
+
+        # Create a copy of the current guess for the inverse.
+        initial_matrix_inverse_guess_old = initial_matrix_inverse_guess.copy()
+
+        # Update the guess using the Newton-Schultz iteration.
+        initial_matrix_inverse_guess = initial_matrix_inverse_guess_old @ (2 * identity_matrix - matrix @ initial_matrix_inverse_guess_old)
+
+        # Compute the difference between the current and the previous guess.
+        difference = compute_matrix_norm(initial_matrix_inverse_guess - initial_matrix_inverse_guess_old)
+
+        # Increase the number of iterations.
+        number_of_iterations += 1
+
+        # If the difference is less than the tolerance, break the loop.
+        if difference < eps:
             break
         
-        if diff > 1e10:
-            return V, iter_count, None, "Divergence detected in Method 1!"
-        
-    res_norm = norm_mat(A @ V - I)
-
-    return V, iter_count, res_norm, None
-
-
-
-def iterative_inverse_cubic (A, eps = 1e-6, kmax = 10000, init_method = 5):
-
-    '''
-        Method 2: Cubic convergence iteration:
-        V_{k+1} = (1/3)*V_k*(I + (I-A*V_k) + (I-A*V_k)^2)
-    '''
-
-    n = A.shape[0]
-    V = initial_guess_square(A, method = init_method)
-    I = np.eye(n)
-    iter_count = 0
-
-    while iter_count < kmax:
-
-        V_old = V.copy()
-        E = I - A @ V_old
-        V = (1/3) * (V_old @ (I + E + E @ E))
-        diff = norm_mat(V - V_old)
-        iter_count += 1
-
-        if diff < eps:
-            break
-
-        if diff > 1e10:
-            return V, iter_count, None, "Divergence detected in Method 2!"
-        
-    res_norm = norm_mat(A @ V - I)
-
-    return V, iter_count, res_norm, None
-
-
-
-def iterative_inverse_avg (A, eps = 1e-6, kmax = 10000, init_method = 5):
-    
-    '''
-        Method 3: Averaged Newton iteration:
-        V_{k+1} = 0.5*(V_k + V_k*(2I - A*V_k))
-    '''
-
-    # This method is similar to the Newton-Schultz method, but it averages the current and next estimates.
-    n = A.shape[0]
-    V = initial_guess_square(A, method = init_method)
-    I = np.eye(n)
-    iter_count = 0
-
-    while iter_count < kmax:
-
-        V_old = V.copy()
-        V = 0.5 * (V_old + V_old @ (2 * I - A @ V_old))
-        diff = norm_mat(V - V_old)
-        iter_count += 1
-
-        if diff < eps:
-            break
-
-        if diff > 1e10:
-            return V, iter_count, None, "Divergence detected in Method 3!"
+        # If the difference is too large, return an error message.
+        if difference > 1e10:
+            return initial_matrix_inverse_guess, number_of_iterations, None, "\nDivergence detected!\n"
     
     # Compute the residual norm ||A*V - I||.
-    res_norm = norm_mat(A @ V - I)
+    residual_norm = compute_matrix_norm(matrix @ initial_matrix_inverse_guess - identity_matrix)
 
-    return V, iter_count, res_norm, None
+    return initial_matrix_inverse_guess, number_of_iterations, residual_norm, None
 
 
 
-def special_matrix (n):
+def iterative_inverse_cubic (matrix, eps = 1e-6, kmax = 10000, initial_guess_method = 5):
+
+    '''
+        Computes the inverse of a square matrix A using the cubic iteration method.
+            -> V_{k+1} = (1/3)*V_k*(I + (I-A*V_k) + (I-A*V_k)^2)
+        Input:
+            - matrix: square matrix A
+            - eps: tolerance for convergence
+            - kmax: maximum number of iterations
+            - initial_guess_method: initial guess method (either 5 or 6)
+        Output:
+            - initial_matrix_inverse_guess: approximate inverse of A
+            - number_of_iterations: number of iterations performed
+            - residual_norm: residual norm ||A*V - I||
+            - error_message: error message (if any)
+    '''
+
+    # Get the size of the matrix.
+    matrix_size = matrix.shape[0]
+
+    # Get the initial guess for the inverse of the matrix.
+    initial_matrix_inverse_guess = get_initial_square_matrix_inverse_guess(matrix, method = initial_guess_method)
+
+    # Create the identity matrix.
+    identity_matrix = np.eye(matrix_size)
+
+    # Initialize the iteration count.
+    number_of_iterations = 0
+
+    while number_of_iterations < kmax:
+
+        # Create a copy of the current guess for the inverse.
+        initial_matrix_inverse_guess_old = initial_matrix_inverse_guess.copy()
+
+        # Get the new guess using the cubic iteration method.
+        error_matrix = identity_matrix - matrix @ initial_matrix_inverse_guess_old
+
+        # Update the guess using the cubic iteration method.
+        initial_matrix_inverse_guess = (1 / 3) * (initial_matrix_inverse_guess_old @ (identity_matrix + error_matrix + error_matrix @ error_matrix))
+
+        # Compute the difference between the current and the previous guess.
+        difference = compute_matrix_norm(initial_matrix_inverse_guess - initial_matrix_inverse_guess_old)
+
+        # Increase the number of iterations.
+        number_of_iterations += 1
+
+        # If the difference is less than the tolerance, break the loop.
+        if difference < eps:
+            break
+
+        # If the difference is too large, return an error message.
+        if difference > 1e10:
+            return initial_matrix_inverse_guess, number_of_iterations, None, "\nDivergence detected!\n"
+    
+    # Compute the residual norm ||A*V - I||.
+    residual_norm = compute_matrix_norm(matrix @ initial_matrix_inverse_guess - identity_matrix)
+
+    return initial_matrix_inverse_guess, number_of_iterations, residual_norm, None
+
+
+
+def iterative_inverse_average (matrix, eps = 1e-6, kmax = 10000, initial_guess_method = 5):
+    
+    '''
+        Computes the inverse of a square matrix A using the averaged Newton-Schultz method.
+            -> V_{k+1} = 0.5*(V_k + V_k*(2I - A*V_k))
+        Input:
+            - matrix: square matrix A
+            - eps: tolerance for convergence
+            - kmax: maximum number of iterations
+            - initial_guess_method: initial guess method (either 5 or 6)
+        Output:
+            - initial_matrix_inverse_guess: approximate inverse of A
+            - number_of_iterations: number of iterations performed
+            - residual_norm: residual norm ||A*V - I||
+            - error_message: error message (if any)
+    '''
+
+    # Get the size of the matrix.
+    matrix_size = matrix.shape[0]
+
+    # Get the initial guess for the inverse of the matrix.
+    initial_matrix_inverse_guess = get_initial_square_matrix_inverse_guess(matrix, method = initial_guess_method)
+
+    # Create the identity matrix.
+    identity_matrix = np.eye(matrix_size)
+
+    # Initialize the iteration count.
+    number_of_iterations = 0
+
+    while number_of_iterations < kmax:
+
+        # Create a copy of the current guess for the inverse.
+        initial_matrix_inverse_guess_old = initial_matrix_inverse_guess.copy()
+
+        # Get the new guess using the averaged Newton-Schultz method.
+        initial_matrix_inverse_guess = 0.5 * (initial_matrix_inverse_guess_old + initial_matrix_inverse_guess_old @ (2 * identity_matrix - matrix @ initial_matrix_inverse_guess_old))
+        
+        # Compute the difference between the current and the previous guess.
+        difference = compute_matrix_norm(initial_matrix_inverse_guess - initial_matrix_inverse_guess_old)
+
+        # Increase the number of iterations.
+        number_of_iterations += 1
+
+        # If the difference is less than the tolerance, break the loop.
+        if difference < eps:
+            break
+
+        # If the difference is too large, return an error message.
+        if difference > 1e10:
+            return initial_matrix_inverse_guess, number_of_iterations, None, "\nDivergence detected!\n"
+    
+    # Compute the residual norm ||A*V - I||.
+    residual_norm = compute_matrix_norm(matrix @ initial_matrix_inverse_guess - identity_matrix)
+
+    return initial_matrix_inverse_guess, number_of_iterations, residual_norm, None
+
+
+
+def get_special_matrix (size):
 
     '''
         Constructs the n x n matrix A with diagonal entries 1 and superdiagonal entries 2.
+        Input:
+            - size: dimension of the matrix
+        Output:
+            - matrix: the constructed matrix
     '''
 
-    # Initialize the matrix A with zeros. ??
-    A = np.eye(n)
+    # Create an identity matrix.
+    matrix = np.eye(size)
 
     # Set the superdiagonal entries to 2.
-    for i in range(n - 1):
-        A[i, i + 1] = 2
+    for index in range(size - 1):
+        matrix[index, index + 1] = 2
 
-    # Get the matrix.
-    return A
-
+    return matrix
 
 
-def exact_inverse_special (n):
+
+def get_special_matrix_exact_inverse (size):
 
     '''
         Computes the exact inverse of the special matrix:
-        For 1 <= i <= j <= n, A^{-1}(i,j)= (-2)^(j-i) and 0 if j < i.
+            -> For 1 <= i <= j <= n, A^{-1}(i,j)= (-2)^(j-i) and 0 if j < i.
+        Input:
+            - size: dimension of the matrix
+        Output:
+            - inverse_matrix: the exact inverse of the special matrix
     '''
 
-    invA = np.zeros((n, n))
+    # Create an empty matrix of the same size.
+    inverse_matrix = np.zeros((size, size))
 
-    for i in range(n):
-        for j in range(i, n):
-            invA[i, j] = (-2) ** (j - i)
+    # Fill the matrix with the exact inverse values.
+    for line in range(size):
+        for column in range(line, size):
+            inverse_matrix[line, column] = (-2) ** (column - line)
 
-    return invA
+    return inverse_matrix
 
 
 
-def iterative_pseudoinverse (A, eps = 1e-6, kmax = 10000):
+def iterative_pseudoinverse (matrix, eps = 1e-6, kmax = 10000):
     
     '''
-        Approximates the left-inverse X (n x m) for a matrix A (m x n) with full column rank
-        so that X*A ≈ I_n using the iteration:
-        X_{k+1} = (2I_n - X_k*A)*X_k,
-        with initial guess: X_0 = A^T/(||A||_1*||A||_∞).
+        Computes the pseudoinverse of a non-square matrix A using the iterative method.
+            -> X_{k+1} = (2I - X_k*A)X_k
+        Input:
+            - matrix: non-square matrix A
+            - eps: tolerance for convergence
+            - kmax: maximum number of iterations
+        Output:
+            - initial_guess_matrix_pseudoinverse: approximate pseudoinverse of A
+            - number_of_iterations: number of iterations performed
+            - residual_norm: residual norm ||I - X*A||
+            - error_message: error message (if any)
     '''
 
-    m, n = A.shape
-    I_n = np.eye(n)
-    norm1 = norm_mat(A, norm_type=1)
-    norm_inf = norm_mat(A, norm_type=np.inf)
-    X = A.T / (norm1 * norm_inf)
-    iter_count = 0
+    # Get the size of the matrix.
+    numberOfLines, numberOfColumns = matrix.shape
 
-    while iter_count < kmax:
+    # Create an identity matrix.
+    identity_matrix = np.eye(numberOfColumns)
 
-        X_old = X.copy()
-        X = (2 * I_n - X_old @ A) @ X_old
-        iter_count += 1
+    # Compute the 1-norm of the matrix A.
+    matrix_norm_one = compute_matrix_norm(matrix, norm_type = 1)
 
-        if norm_mat(I_n - X @ A) < eps:
+    # Compute the infinity norm of the matrix A.
+    matrix_norm_infinity = compute_matrix_norm(matrix, norm_type = np.inf)
+
+    # Get the initial guess for the pseudoinverse of the matrix.
+    initial_guess_matrix_pseudoinverse = matrix.T / (matrix_norm_one * matrix_norm_infinity)
+
+    # Initialize the iteration count.
+    number_of_iterations = 0
+
+    while number_of_iterations < kmax:
+
+        # Create a copy of the current guess for the pseudoinverse.
+        initial_guess_matrix_pseudoinverse_old = initial_guess_matrix_pseudoinverse.copy()
+
+        # Update the guess using the iterative method.
+        initial_guess_matrix_pseudoinverse = (2 * identity_matrix - initial_guess_matrix_pseudoinverse_old @ matrix) @ initial_guess_matrix_pseudoinverse_old
+
+        # Increase the number of iterations.
+        number_of_iterations += 1
+
+        # If the difference is less than the tolerance, break the loop.
+        if compute_matrix_norm(identity_matrix - initial_guess_matrix_pseudoinverse @ matrix) < eps:
             break
 
-        if norm_mat(X - X_old) > 1e10:
-            return X, iter_count, None, "Divergence detected in Pseudoinverse method!"
-        
-    res_norm = norm_mat(I_n - X @ A)
+        # If the difference is too large, return an error message.
+        if compute_matrix_norm(initial_guess_matrix_pseudoinverse - initial_guess_matrix_pseudoinverse_old) > 1e10:
+            return initial_guess_matrix_pseudoinverse, number_of_iterations, None, "\nDivergence detected!\n"
+    
+    # Compute the residual norm ||I - X*A||.
+    residual_norm = compute_matrix_norm(identity_matrix - initial_guess_matrix_pseudoinverse @ matrix)
 
-    return X, iter_count, res_norm, None
+    return initial_guess_matrix_pseudoinverse, number_of_iterations, residual_norm, None
 
 
 
@@ -293,7 +417,7 @@ class Application (tk.Tk):
         self.manual_square_text.insert(tk.END, "Enter matrix rows with numbers separated by spaces, one row per line.\nExample for 3x3:\n1 2 3\n4 5 6\n7 8 9")
         
         # Button to run iterative inversions for square matrix.
-        run_btn = ttk.Button(frame, text = "Run Square Matrix Inversion", command = self.run_square)
+        run_btn = ttk.Button(frame, text = "Run Compulsory", command = self.run_compulsory)
         run_btn.pack(padx = 10, pady = 5)
         
         # Create the output area.
@@ -308,9 +432,9 @@ class Application (tk.Tk):
         '''
 
         if self.square_matrix_source_var.get() == "Manual":
-            self.manual_square_text.config(state=tk.NORMAL)
+            self.manual_square_text.config(state = tk.NORMAL)
         else:
-            self.manual_square_text.config(state=tk.DISABLED)
+            self.manual_square_text.config(state = tk.DISABLED)
     
 
     def create_rect_tab (self, frame):
@@ -365,7 +489,7 @@ class Application (tk.Tk):
         self.manual_rect_text.insert(tk.END, "Enter matrix rows with numbers separated by spaces, one row per line.\nExample for 3x2:\n1 2\n3 4\n5 6")
         
         # Button to run pseudoinverse for non-square matrix.
-        run_btn = ttk.Button(frame, text = "Run Non-Square Inversion (Pseudoinverse)", command = self.run_rect)
+        run_btn = ttk.Button(frame, text = "Run Bonus", command = self.run_bonus)
         run_btn.pack(padx = 10, pady = 5)
         
         # Create the output area.
@@ -380,18 +504,18 @@ class Application (tk.Tk):
         '''
 
         if self.rect_matrix_source_var.get() == "Manual":
-            self.manual_rect_text.config(state=tk.NORMAL)
+            self.manual_rect_text.config(state = tk.NORMAL)
         else:
-            self.manual_rect_text.config(state=tk.DISABLED)
+            self.manual_rect_text.config(state = tk.DISABLED)
 
 
-    def run_square (self):
+    def run_compulsory (self):
 
         '''
             Runs the iterative methods for square matrix inversion.
         '''
 
-        # Retrieve parameters for square matrix inversion.
+        # Get the parameters for the square matrix inversion.
         try:
             n = int(self.n_entry.get())
             eps = float(self.eps_entry.get())
@@ -400,16 +524,21 @@ class Application (tk.Tk):
             messagebox.showerror("Input Error", "Please check numerical inputs for dimension, ε, and kmax.")
             return
         
+        # Get the matrix source and construct the matrix.
         source = self.square_matrix_source_var.get()
-        output_str = "=== Square Matrix Inversion ===\n"
+
+        # Initialize the output string.
+        output_str = "\n\tCompulsory - Square Matrix Inversion:\n\n"
 
         if source == "Special":
-            A = special_matrix(n)
-            output_str += "Using Special Matrix A (Task 3):\n" + str(A) + "\n"
+            A = get_special_matrix(n)
+            output_str += "\tUsing Special Matrix A (Task 3):\n\n" + str(A) + "\n"
+
         elif source == "Random":
             A_random = np.random.rand(n, n)
             A = A_random + n * np.eye(n)
-            output_str += "Using Random Matrix A:\n" + str(A) + "\n"
+            output_str += "\tUsing Random Matrix A:\n\n" + str(A) + "\n"
+
         elif source == "Manual":
             try:
                 manual_text = self.manual_square_text.get("1.0", tk.END).strip()
@@ -422,7 +551,7 @@ class Application (tk.Tk):
                 if A.shape[0] != n:
                     messagebox.showwarning("Dimension Mismatch", f"Specified dimension n = {n} but matrix is {A.shape[0]}x{A.shape[1]}. Using provided matrix.")
                     n = A.shape[0]
-                output_str += "Using Manual Input Matrix A:\n" + str(A) + "\n"
+                output_str += "\nUsing Custom Matrix A:\n\n" + str(A) + "\n"
             except Exception as e:
                 messagebox.showerror("Input Error", "Error parsing the manual matrix input. Please check the format.")
                 return
@@ -430,39 +559,44 @@ class Application (tk.Tk):
             messagebox.showerror("Input Error", "Unknown matrix source selected.")
             return
         
-        # Run the three iterative methods for inversion
+        # Run the three iterative methods for inversion.
         methods = [("Newton-Schultz", iterative_inverse_newton),
                    ("Cubic Iteration", iterative_inverse_cubic),
-                   ("Averaged Newton", iterative_inverse_avg)]
+                   ("Averaged Newton", iterative_inverse_average)]
+        
         for name, method in methods:
-            V, iter_count, res_norm, err = method(A, eps, kmax, init_method=5)
-            output_str += f"\nMethod: {name}\n"
+
+            V, number_of_iterations, res_norm, err = method(A, eps, kmax, initial_guess_method=5)
+
+            output_str += f"\n\tMethod {name}:\n\n"
+
             if err:
                 output_str += "Error: " + err + "\n"
+
             else:
-                output_str += f"Iterations: {iter_count}\n"
-                output_str += f"Residual norm ||A*V - I|| = {res_norm:.3e}\n"
+                output_str += f"\t\tIterations: {number_of_iterations}\n"
+                output_str += f"\t\tResidual norm ||A*V - I|| = {res_norm:.3e}\n"
         
         # If special matrix was used, compare with the exact inverse
         if source == "Special":
-            invA_exact = exact_inverse_special(n)
-            V_newton, _, _, _ = iterative_inverse_newton(A, eps, kmax, init_method=5)
-            diff_norm = norm_mat(invA_exact - V_newton)
-            output_str += "\nComparison with Exact Inverse:\n"
-            output_str += "Exact Inverse A^-1:\n" + str(invA_exact) + "\n"
-            output_str += f"Difference norm ||A^-1_exact - A^-1_approx|| = {diff_norm:.3e}\n"
+            invA_exact = get_special_matrix_exact_inverse(n)
+            V_newton, _, _, _ = iterative_inverse_newton(A, eps, kmax, initial_guess_method=5)
+            diff_norm = compute_matrix_norm(invA_exact - V_newton)
+            output_str += "\n\tComparison with Exact Inverse:\n\n"
+            output_str += "\t\tExact Inverse A^-1:\n\n" + str(invA_exact) + "\n"
+            output_str += f"\n\t\tDifference norm ||A^-1_exact - A^-1_approx|| = {diff_norm:.3e}\n"
         
         self.square_output.delete(1.0, tk.END)
         self.square_output.insert(tk.END, output_str)
         
 
-    def run_rect (self):
+    def run_bonus (self):
 
         '''
             Runs the iterative method for non-square matrix inversion (pseudoinverse).
         '''
 
-        # Retrieve parameters for non-square matrix inversion.
+        # Get the parameters for the non-square matrix inversion.
         try:
             m = int(self.m_entry.get())
             n = int(self.n_rect_entry.get())
@@ -473,7 +607,8 @@ class Application (tk.Tk):
             return
         
         source = self.rect_matrix_source_var.get()
-        output_str = "=== Non-Square Matrix Inversion (Pseudoinverse) ===\n"
+
+        output_str = "\n\tNon-Square Matrix Inversion (Pseudoinverse):\n\n"
 
         if source == "Random":
             A_rect = np.random.rand(m, n)
@@ -482,7 +617,8 @@ class Application (tk.Tk):
                 A_rect = A_rect + np.eye(m, n)
             else:
                 A_rect = A_rect + np.eye(m, n)
-            output_str += f"Using Random Matrix A (shape {m}x{n}):\n" + str(A_rect) + "\n"
+            output_str += f"\tUsing Random Matrix A (shape {m}x{n}):\n\n" + str(A_rect) + "\n"
+
         elif source == "Manual":
             try:
                 manual_text = self.manual_rect_text.get("1.0", tk.END).strip()
@@ -492,21 +628,23 @@ class Application (tk.Tk):
                 if A_rect.shape[0] != m or A_rect.shape[1] != n:
                     messagebox.showwarning("Dimension Mismatch", f"Specified dimensions m={m}, n={n} do not match the provided matrix shape {A_rect.shape}. Using provided matrix dimensions.")
                     m, n = A_rect.shape
-                output_str += f"Using Manual Input Matrix A (shape {m}x{n}):\n" + str(A_rect) + "\n"
+                output_str += f"\tUsing Manual Input Matrix A (shape {m}x{n}):\n" + str(A_rect) + "\n"
             except Exception as e:
                 messagebox.showerror("Input Error", "Error parsing the manual matrix input for non-square matrix. Please check the format.")
                 return
+            
         else:
             messagebox.showerror("Input Error", "Unknown matrix source selected for non-square matrix.")
             return
         
-        X, iter_count, res_norm, err = iterative_pseudoinverse(A_rect, eps, kmax)
+        X, number_of_iterations, res_norm, err = iterative_pseudoinverse(A_rect, eps, kmax)
+
         if err:
             output_str += "Error: " + err + "\n"
         else:
-            output_str += f"Iterations: {iter_count}\n"
-            output_str += f"Residual norm ||I - X*A|| = {res_norm:.3e}\n"
-            output_str += "Computed left-inverse X (such that X*A ~ I):\n" + str(X) + "\n"
+            output_str += f"\n\tIterations: {number_of_iterations}\n"
+            output_str += f"\n\tResidual norm ||I - X*A|| = {res_norm:.3e}\n"
+            output_str += "\n\tComputed left-inverse X (such that X*A ~ I):\n\n" + str(X) + "\n"
         
         self.rect_output.delete(1.0, tk.END)
         self.rect_output.insert(tk.END, output_str)
