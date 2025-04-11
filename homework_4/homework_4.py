@@ -115,7 +115,7 @@ def iterative_inverse_cubic (matrix, eps = 1e-6, kmax = 10000, initial_guess_met
 
     '''
         Computes the inverse of a square matrix A using the cubic iteration method.
-            -> V_{k+1} = (1/3)*V_k*(I + (I-A*V_k) + (I-A*V_k)^2)
+            -> V_{k+1} = V_k*(3*I - AV_k*(3*I - AV_k))
         Input:
             - matrix: square matrix A
             - eps: tolerance for convergence
@@ -149,7 +149,7 @@ def iterative_inverse_cubic (matrix, eps = 1e-6, kmax = 10000, initial_guess_met
         error_matrix = identity_matrix - matrix @ initial_matrix_inverse_guess_old
 
         # Update the guess using the cubic iteration method.
-        initial_matrix_inverse_guess = (1 / 3) * (initial_matrix_inverse_guess_old @ (identity_matrix + error_matrix + error_matrix @ error_matrix))
+        initial_matrix_inverse_guess = initial_matrix_inverse_guess_old @ (3 * identity_matrix - matrix @ initial_matrix_inverse_guess_old @ (3 * identity_matrix - matrix @ initial_matrix_inverse_guess_old))
 
         # Compute the difference between the current and the previous guess.
         difference = compute_matrix_norm(initial_matrix_inverse_guess - initial_matrix_inverse_guess_old)
@@ -176,7 +176,7 @@ def iterative_inverse_average (matrix, eps = 1e-6, kmax = 10000, initial_guess_m
     
     '''
         Computes the inverse of a square matrix A using the averaged Newton-Schultz method.
-            -> V_{k+1} = 0.5*(V_k + V_k*(2I - A*V_k))
+            -> V_{k+1} = (I + (1 / 4) * (I - V_k*A)*(3*I - V_k*A)^2) * V_k
         Input:
             - matrix: square matrix A
             - eps: tolerance for convergence
@@ -207,7 +207,7 @@ def iterative_inverse_average (matrix, eps = 1e-6, kmax = 10000, initial_guess_m
         initial_matrix_inverse_guess_old = initial_matrix_inverse_guess.copy()
 
         # Get the new guess using the averaged Newton-Schultz method.
-        initial_matrix_inverse_guess = 0.5 * (initial_matrix_inverse_guess_old + initial_matrix_inverse_guess_old @ (2 * identity_matrix - matrix @ initial_matrix_inverse_guess_old))
+        initial_matrix_inverse_guess = (identity_matrix + (1 / 4) * (identity_matrix - initial_matrix_inverse_guess_old @ matrix) @ (3 * identity_matrix - initial_matrix_inverse_guess_old @ matrix) ** 2) @ initial_matrix_inverse_guess_old
         
         # Compute the difference between the current and the previous guess.
         difference = compute_matrix_norm(initial_matrix_inverse_guess - initial_matrix_inverse_guess_old)
