@@ -1,5 +1,9 @@
 '''
     Homework 3
+    Name: Roman Tudor
+    Student ID: 310910401ESL201031
+    Email Address: romantudor.contact@gmail.com
+    Discord Username: romantudorofficial
     Bibliography: ChatGPT, Lecture Notes
     LLM Percentile: 30%
 '''
