@@ -1,70 +1,110 @@
-#!/usr/bin/env python3
-"""
-tema5.py
-
-GUI for Tema 5:
- • Inputs: p, n, ε
- • Load A_file (sparse .txt)
- • Run all requirements 1,2,3 in one click
-"""
+'''
+    Homework 5
+    Name: Roman Tudor
+    Student ID: 310910401ESL201031
+    Email Address: romantudor.contact@gmail.com
+    Discord Username: romantudorofficial
+    Bibliography: ChatGPT, Lecture Notes
+    LLM Percentile: 40%
+'''
 
 import numpy as np
 import tkinter as tk
 from tkinter import filedialog, scrolledtext, messagebox
 from scipy import linalg
 
-# --- Tema 3 sparse storage ---
-class SparseMatrix:
-    def __init__(self, n):
-        self.n = n
-        self.d = np.zeros(n)               # diagonal entries
-        self.rows = [dict() for _ in range(n)]  # off-diagonal
 
-    def add(self, i, j, v):
+
+class SparseMatrix:
+
+    '''
+        Class for storing a rare matrix in a sparse format.
+    '''
+
+    def __init__ (self, n):
+
+        # Initialize the sparse matrix with n rows and columns.
+        self.n = n
+
+        # Initialize the diagonal and row dictionaries.
+        self.d = np.zeros(n)
+        self.rows = [dict() for _ in range(n)]
+
+
+    def add (self, i, j, v):
+
+        '''
+            Add a value v to the matrix at position (i, j).
+        '''
+
         if i == j:
             self.d[i] = v
         else:
             self.rows[i][j] = v
             self.rows[j][i] = v
 
-    def matvec(self, x):
+
+    def matvec (self, x):
+
+        '''
+            Multiply the sparse matrix by a vector x.
+        '''
+
         y = self.d * x
+
         for i,row in enumerate(self.rows):
             for j,v in row.items():
                 y[i] += v * x[j]
+
         return y
 
-    def to_dense(self):
+
+    def to_dense (self):
+
         A = np.diag(self.d)
+        
         for i,row in enumerate(self.rows):
             for j,v in row.items():
                 A[i,j] = v
+        
         return A
 
-def read_sparse(filename):
+
+
+def read_sparse (filename):
+
     lines = [L.strip() for L in open(filename) if L.strip()]
     n = int(lines[0])
     M = SparseMatrix(n)
+    
     for L in lines[1:]:
         parts = [p.strip() for p in L.split(',')]
         if len(parts)==3:
             v,i,j = float(parts[0]), int(parts[1]), int(parts[2])
             M.add(i,j,v)
+    
     return M
 
-def is_symmetric(M, tol=1e-12):
+
+
+def is_symmetric (M, tol = 1e-12):
+
     for i,row in enumerate(M.rows):
         for j,v in row.items():
             if abs(v - M.rows[j].get(i,0.0)) > tol:
                 return False
+    
     return True
 
-# --- Power Method ---
-def power_method(M, eps, kmax=10**6):
+
+
+def power_method (M, eps, kmax = 10**6):
+
     n = M.n
     x = np.random.randn(n); x /= np.linalg.norm(x)
     w = M.matvec(x)
     lam = x.dot(w)
+    
     for _ in range(kmax):
         x = w/np.linalg.norm(w)
         w = M.matvec(x)
@@ -75,22 +115,34 @@ def power_method(M, eps, kmax=10**6):
         lam = lam_new
     else:
         raise RuntimeError("Power method did not converge")
+    
     res = np.linalg.norm(M.matvec(x) - lam*x)
+    
     return lam, res
 
-def generate_random_sparse(n, density=0.01):
+
+
+def generate_random_sparse (n, density = 0.01):
+
     M = SparseMatrix(n)
+    
     for i in range(n):
         M.add(i,i,np.random.rand())
+    
     k = max(1, int(density*n))
+    
     for i in range(n):
         js = np.random.choice([j for j in range(n) if j!=i], k, replace=False)
         for j in js:
             M.add(i,j,np.random.rand())
+    
     return M
 
+
+
 # --- SVD analysis ---
-def svd_analysis(A, b, eps):
+def svd_analysis (A, b, eps):
+    
     U, s, VT = linalg.svd(A, full_matrices=False)
     rank = np.sum(s > eps)
     cond = s[0]/s[rank-1] if rank>0 else np.inf
@@ -98,7 +150,10 @@ def svd_analysis(A, b, eps):
     Aplus = VT.T @ Splus @ U.T
     xI = Aplus @ b
     res2 = np.linalg.norm(b - A @ xI)
+    
     return s, rank, cond, xI, res2
+
+
 
 # --- GUI ---
 class App:
@@ -199,10 +254,27 @@ class App:
 
         self.txt.insert(tk.END, "=== End ===\n")
 
-def main():
+
+
+def main ():
+
+    '''
+        Main function to run the GUI application.
+    '''
+
+    # Create the main window.
     root = tk.Tk()
+ 
     App(root)
+
     root.mainloop()
 
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
+
+    '''
+        Main function to run the program.
+    '''
+
     main()
