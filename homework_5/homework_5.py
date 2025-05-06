@@ -5,7 +5,7 @@
     Email Address: romantudor.contact@gmail.com
     Discord Username: romantudorofficial
     Bibliography: ChatGPT, Lecture Notes
-    LLM Percentile: 40%
+    LLM Percentile: 35%
 '''
 
 import numpy as np
@@ -18,230 +18,251 @@ from scipy import linalg
 class SparseMatrix:
 
     '''
-        Class for storing a rare matrix in a sparse format.
+        Stores a rare matrix in a sparse format.
     '''
 
-    def __init__ (self, n):
+    def __init__ (self, matrixSize):
 
         '''
-            Initialize the sparse matrix with n rows and columns.
+            Initializes the sparse matrix with the given number of rows and columns.
             Input:
-                - n: size of the matrix (number of rows and columns)
+                - matrixSize: size of the matrix (number of rows and columns)
             Output:
-                - None
+                - none
         '''
 
-        # Initialize the sparse matrix with n rows and columns.
-        self.n = n
+        # Initialize the size of the sparse matrix.
+        self.size = matrixSize
 
-        # Initialize the diagonal and row dictionaries.
-        self.d = np.zeros(n)
-        self.rows = [dict() for _ in range(n)]
+        # Initialize the diagonal of the sparse matrix.
+        self.diagonal = np.zeros(matrixSize)
+
+        # Initialize the rows of the sparse matrix.
+        self.rows = [dict() for _ in range(matrixSize)]
 
 
-    def add (self, i, j, v):
+    def addValue (self, row, column, value):
 
         '''
-            Add a value v to the matrix at position (i, j).
+            Adds a value to the matrix at a specified position.
             Input:
-                - i: row index
-                - j: column index
-                - v: value to be added
+                - row: row index
+                - column: column index
+                - value: the value to be added
             Output:
-                - None
+                - none
         '''
 
-        if i == j:
-            self.d[i] = v
+        if row == column:
+            self.diagonal[row] = value
         else:
-            self.rows[i][j] = v
-            self.rows[j][i] = v
+            self.rows[row][column] = value
+            self.rows[column][row] = value
 
 
-    def matvec (self, x):
+    def multiplyByVector (self, vector):
 
         '''
-            Multiply the sparse matrix by a vector x.
+            Multiplies the sparse matrix by a vector.
             Input:
-                - x: vector to be multiplied
+                - vector: the vector to be multiplied
             Output:
-                - y: result of the multiplication
+                - result: the result of the multiplication
         '''
 
-        y = self.d * x
+        result = self.diagonal * vector
 
-        for i,row in enumerate(self.rows):
-            for j,v in row.items():
-                y[i] += v * x[j]
+        for row, line in enumerate (self.rows):
+            for column, value in line.items():
+                result[row] += value * vector[column]
 
-        return y
+        return result
 
 
-    def to_dense (self):
+    def convertToDense (self):
 
         '''
-            Convert the sparse matrix to a dense format.
+            Converts the sparse matrix to a dense format.
             Input:
-                - None
+                - none
             Output:
-                - A: dense matrix (numpy array)
+                - matrix: the dense matrix
         '''
 
-        A = np.diag(self.d)
+        matrix = np.diag(self.diagonal)
         
-        for i,row in enumerate(self.rows):
-            for j,v in row.items():
-                A[i,j] = v
+        for row, line in enumerate(self.rows):
+            for column, value in line.items():
+                matrix[row, column] = value
         
-        return A
+        return matrix
 
 
 
-def read_sparse (filename):
+def readMatrix (fileName):
 
     '''
-        Read a sparse matrix from a file.
+        Reads a sparse matrix from a file.
         Input:
-            - filename: name of the file containing the sparse matrix
+            - fileName: the name of the file containing the sparse matrix
         Output:
-            - M: the sparse matrix (SparseMatrix object)
+            - matrix: the sparse matrix
     '''
 
-    lines = [L.strip() for L in open(filename) if L.strip()]
-    n = int(lines[0])
-    M = SparseMatrix(n)
+    lines = [content.strip() for content in open(fileName) if content.strip()]
+    matrixSize = int(lines[0])
+    matrix = SparseMatrix(matrixSize)
     
-    for L in lines[1:]:
-        parts = [p.strip() for p in L.split(',')]
-        if len(parts)==3:
-            v,i,j = float(parts[0]), int(parts[1]), int(parts[2])
-            M.add(i,j,v)
+    for line in lines[1:]:
+        
+        parts = [part.strip() for part in line.split(',')]
+        
+        if len(parts) == 3:
+
+            value, row, column = float(parts[0]), int(parts[1]), int(parts[2])
+            matrix.addValue(row, column, value)
     
-    return M
+    return matrix
 
 
 
-def is_symmetric (M, tol = 1e-12):
+def isSymmetric (matrix, tolerance = 1e-12):
 
     '''
-        Check if a sparse matrix M is symmetric.
+        Checks if a sparse matrix is symmetric or not.
         Input:
-            - M: matrix (SparseMatrix object)
-            - tol: tolerance for symmetry (default = 1e-12)
+            - matrix: the matrix
+            - tolerance: the tolerance for symmetry (default = 1e-12)
         Output:
-            - True if M is symmetric, False otherwise
+            - true, if the matrix is symmetric
+            - false, otherwise
     '''
 
-    for i,row in enumerate(M.rows):
-        for j,v in row.items():
-            if abs(v - M.rows[j].get(i,0.0)) > tol:
+    for row, line in enumerate(matrix.rows):
+        for column, value in line.items():
+            if abs(value - matrix.rows[column].get(row, 0.0)) > tolerance:
                 return False
     
     return True
 
 
 
-def power_method (M, eps, kmax = 10**6):
+def applyPowerMethod (matrix, epsilon, maximumNumberOfIterations = 10 ** 6):
 
     '''
-        Power method to find the largest eigenvalue of a matrix M.
+        Finds the largest eigenvalue of a matrix using the power method.
         Input:
-            - M: matrix (SparseMatrix object)
-            - eps: tolerance for convergence
-            - kmax: maximum number of iterations (default = 10^6)
+            - matrix: the matrix
+            - epsilon: the tolerance for convergence
+            - maximumNumberOfIterations: the maximum number of iterations (default = 10 ^ 6)
         Output:
-            - lam: largest eigenvalue of M
-            - res: residual of the power method
+            - largestEigenvalue: the largest eigenvalue of the matrix
+            - residual: the residual
     '''
 
-    n = M.n
-    x = np.random.randn(n); x /= np.linalg.norm(x)
-    w = M.matvec(x)
-    lam = x.dot(w)
+    # Get the size of the matrix.
+    matrixSize = matrix.size
+
+    # Generate a random vector of the same size as the matrix.
+    randomVector = np.random.randn(matrixSize)
+    randomVector /= np.linalg.norm(randomVector)
+
+    multiplication = matrix.multiplyByVector(randomVector)
+
+    # Get the largest eigenvalue of the matrix.
+    largestEigenvalue = randomVector.dot(multiplication)
     
-    for _ in range(kmax):
-        x = w/np.linalg.norm(w)
-        w = M.matvec(x)
-        lam_new = x.dot(w)
-        if np.linalg.norm(w - lam*x) <= n*eps:
-            lam = lam_new
+    for _ in range(maximumNumberOfIterations):
+
+        randomVector = multiplication / np.linalg.norm(multiplication)
+        multiplication = matrix.multiplyByVector(randomVector)
+        newLargestEigenvalue = randomVector.dot(multiplication)
+
+        if np.linalg.norm(multiplication - largestEigenvalue * randomVector) <= matrixSize * epsilon:
+            largestEigenvalue = newLargestEigenvalue
             break
-        lam = lam_new
+
+        largestEigenvalue = newLargestEigenvalue
+    
     else:
-        raise RuntimeError("Power method did not converge")
+        raise RuntimeError("The power method did not converge!")
     
-    res = np.linalg.norm(M.matvec(x) - lam*x)
+    # Get the residual.
+    residual = np.linalg.norm(matrix.multiplyByVector(randomVector) - largestEigenvalue * randomVector)
     
-    return lam, res
+    return largestEigenvalue, residual
 
 
 
-def generate_random_sparse (n, density = 0.01):
+def generateRandomMatrix (matrixSize, density = 0.01):
 
     '''
-        Generate a random sparse matrix of size n x n with a given density.
+        Generates a random sparse matrix of a given size and density.
         Input:
-            - n: size of the matrix
-            - density: density of the matrix (default = 0.01)
+            - matrixSize: the size of the matrix
+            - density: the density of the matrix (default = 0.01)
         Output:
-            - M: the generated sparse matrix
+            - matrix: the generated sparse matrix
     '''
 
-    M = SparseMatrix(n)
+    matrix = SparseMatrix(matrixSize)
     
-    for i in range(n):
-        M.add(i, i, np.random.rand())
+    for row in range(matrixSize):
+        matrix.addValue(row, row, np.random.rand())
     
-    k = max(1, int(density * n))
+    numberOfNonZeroElements = max(1, int(density * matrixSize))
     
-    for i in range(n):
-        js = np.random.choice([j for j in range(n) if j != i], k, replace = False)
-        for j in js:
-            M.add(i, j, np.random.rand())
+    for row in range(matrixSize):
+        
+        columns = np.random.choice([column for column in range(matrixSize) if column != row], numberOfNonZeroElements, replace = False)
+        
+        for column in columns:
+            matrix.addValue(row, column, np.random.rand())
     
-    return M
+    return matrix
 
 
 
-def svd_analysis (A, b, eps):
+def svd_analysis (matrix, vector, epsilon):
 
     '''
-        Perform SVD analysis on the matrix A and vector b.
+        Performs the SVD (Singular Value Decomposition) analysis on the given matrix and vector.
         Input:
-            - A: matrix (numpy array)
-            - b: vector (numpy array)
-            - eps: tolerance for singular values
+            - matrix: the matrix
+            - vector: the vector
+            - epsilon: the tolerance for singular values
         Output:
-            - s: singular values of A
-            - rank: rank of A
-            - cond: condition number of A
-            - xI: least-squares solution of Ax = b
-            - res2: residual of the least-squares solution
+            - singularValues: the singular values of the matrix
+            - matrixRank: the rank of the matrix
+            - conditionNumber: the condition number of the matrix
+            - leastSquaresSolution: the least-squares solution of Ax = b
+            - residual: the residual of the least-squares solution
     '''
     
-    # Get the SVD of A.
-    U, s, VT = linalg.svd(A, full_matrices = False)
+    # Get the SVD of the matrix.
+    leftSingularVectors, singularValues, rightSingularVectors = linalg.svd(matrix, full_matrices = False)
 
-    # Get the rank of A.
-    rank = np.sum(s > eps)
+    # Get the rank of the matrix.
+    matrixRank = np.sum(singularValues > epsilon)
 
-    # Get the condition number of A.
-    cond = s[0] / s[rank-1] if rank > 0 else np.inf
+    # Get the condition number of the matrix.
+    conditionNumber = singularValues[0] / singularValues[matrixRank - 1] if matrixRank > 0 else np.inf
 
-    # Get the pseudo-inverse of A.
-    Splus = np.diag([1 / si if si > eps else 0.0 for si in s])
-    Aplus = VT.T @ Splus @ U.T
+    # Get the pseudo-inverse of the matrix.
+    pseudoInverseOfS = np.diag([1 / singularValue if singularValue > epsilon else 0.0 for singularValue in singularValues])
+    pseudoInverseOfMatrix = rightSingularVectors.T @ pseudoInverseOfS @ leftSingularVectors.T
 
-    # Get the least-squares solution xI.
-    xI = Aplus @ b
-    res2 = np.linalg.norm(b - A @ xI)
+    # Get the least-squares solution of Ax = b.
+    leastSquaresSolution = pseudoInverseOfMatrix @ vector
 
-    # Return the singular values, rank, condition number, xI, and residual.    
-    return s, rank, cond, xI, res2
+    # Get the residual of the least-squares solution.
+    residual = np.linalg.norm(vector - matrix @ leastSquaresSolution)
+  
+    return singularValues, matrixRank, conditionNumber, leastSquaresSolution, residual
 
 
 
-class App:
+class Application:
 
     '''
         Class for the GUI application.
@@ -251,6 +272,10 @@ class App:
 
         '''
             Initializes the GUI application.
+            Input:
+                - root: the root window
+            Output:
+                - none
         '''
 
         # Set the title.
@@ -260,7 +285,7 @@ class App:
         frame = tk.Frame(root)
         frame.pack(padx = 5, pady = 5, anchor = "w")
 
-        # Input entries
+        # Get the input values.
         for idx, (lbl, w) in enumerate ([("p", 6), ("n", 6), ("ε", 8)]):
 
             tk.Label(frame, text = lbl + ":").grid(row = 0, column = 2 * idx)
@@ -296,9 +321,9 @@ class App:
             return
         
         try:
-            M = read_sparse(f)
+            M = readMatrix(f)
             self.M_file = M
-            self.txt.insert(tk.END, f"\nLoaded File (n={M.n}) from {f}\n\n")
+            self.txt.insert(tk.END, f"\nLoaded File (n={M.size}) from {f}\n\n")
         except Exception as e:
             messagebox.showerror("Load Error", str(e))
 
@@ -326,14 +351,14 @@ class App:
         # Get the results for the first requirement.
         self.txt.insert(tk.END, "Requirement 1\n\n")
         self.txt.insert(tk.END, f"p = {p},  n = {n},  ε = {eps}\n\n")
-        A_r = generate_random_sparse(p)
+        A_r = generateRandomMatrix(p)
         self.A_rand = A_r
         self.txt.insert(tk.END, "Generated A_rand (dense):\n")
-        self.txt.insert(tk.END, np.array2string(A_r.to_dense(), precision=4) + "\n\n")
+        self.txt.insert(tk.END, np.array2string(A_r.convertToDense(), precision=4) + "\n\n")
         if self.M_file:
             Mf = self.M_file
             self.txt.insert(tk.END, "Sparse storage of A_file:\n")
-            self.txt.insert(tk.END, f"  d = {np.array2string(Mf.d,precision=4)}\n")
+            self.txt.insert(tk.END, f"  d = {np.array2string(Mf.diagonal,precision=4)}\n")
             for i,row in enumerate(Mf.rows):
                 if row:
                     self.txt.insert(tk.END, f"  row {i}: {row}\n")
@@ -343,14 +368,14 @@ class App:
 
         # Get the results for the second requirement.
         self.txt.insert(tk.END, "Requirement 2\n\n")
-        lam_r, res_r = power_method(A_r, eps)
+        lam_r, res_r = applyPowerMethod(A_r, eps)
         self.txt.insert(tk.END, f"A_rand →    λ_max = {lam_r:.6e},   residual = {res_r:.6e}\n")
         if self.M_file:
             Mf = self.M_file
-            sym = is_symmetric(Mf)
+            sym = isSymmetric(Mf)
             self.txt.insert(tk.END, f"A_file symmetric? {'Yes' if sym else 'No'}\n")
             if sym:
-                lam_f, res_f = power_method(Mf, eps)
+                lam_f, res_f = applyPowerMethod(Mf, eps)
                 self.txt.insert(tk.END, f"A_file →    λ_max = {lam_f:.6e},   residual = {res_f:.6e}\n\n")
             else:
                 self.txt.insert(tk.END, "Power Method on A_file N/A (non-symmetric)\n\n")
@@ -360,7 +385,7 @@ class App:
         # Get the results for the third requirement.
         self.txt.insert(tk.END, "Requirement 3\n\n")
         b = np.random.randn(p)
-        s, rank, cond, xI, res2 = svd_analysis(A_r.to_dense(), b, eps)
+        s, rank, cond, xI, res2 = svd_analysis(A_r.convertToDense(), b, eps)
         self.txt.insert(tk.END,
             f"Singular values:    {np.array2string(s,precision=4)}\n"
             f"Rank(A_rand) =      {rank}\n"
@@ -379,7 +404,7 @@ def main ():
 
     root = tk.Tk()
  
-    App(root)
+    Application(root)
 
     root.mainloop()
 
