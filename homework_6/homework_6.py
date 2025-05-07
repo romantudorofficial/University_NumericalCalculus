@@ -116,7 +116,7 @@ def least_squares (x, y, m):
 
     n = len(x)
 
-    # Build normal matrix B and rhs fvec
+    # Build normal matrix B and vector fvec.
     B = np.zeros((m+1, m+1))
     fvec = np.zeros(m+1)
 
@@ -220,7 +220,7 @@ class App:
         ttk.Label(frame, text="xbar:").grid(row=2, column=0)
         self.xbar_entry = ttk.Entry(frame, width=10); self.xbar_entry.grid(row=2,column=1)
         ttk.Label(frame, text="Function:").grid(row=2, column=2)
-        self.func_var = tk.StringVar();
+        self.func_var = tk.StringVar()
         self.func_combo = ttk.Combobox(frame, textvariable=self.func_var, values=list(funcs.keys()), state='readonly')
         self.func_combo.grid(row=2, column=3); self.func_combo.current(0)
 
@@ -267,6 +267,7 @@ class App:
 
             # True value
             fbar = f(xbar)
+
             self.output.delete(1.0, tk.END)
 
             # LS polynomial
@@ -274,6 +275,7 @@ class App:
             Pm = horner(a, xbar)
             err_ls = abs(Pm - fbar)
             sum_ls = np.sum(np.abs(horner(a, xi) - yi))
+
             self.output.insert(tk.END, f"Least Squares P_{m}({xbar:.4f}) = {Pm:.6f}\n")
             self.output.insert(tk.END, f"|P_{m}({xbar:.4f}) - f({xbar:.4f})| = {err_ls:.6f}\n")
             self.output.insert(tk.END, f"Sum |P_{m}(x_i) - y_i| = {sum_ls:.6f}\n\n")
@@ -285,6 +287,7 @@ class App:
             coeffs = trig_interp(xi_t, yi_t, m)
             Tn = eval_trig(coeffs, xbar, m)
             err_trig = abs(Tn - fbar)
+            
             self.output.insert(tk.END, f"Trig Interp T_{2*m}({xbar:.4f}) = {Tn:.6f}\n")
             self.output.insert(tk.END, f"|T_{2*m}({xbar:.4f}) - f({xbar:.4f})| = {err_trig:.6f}\n")
 

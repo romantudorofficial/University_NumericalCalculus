@@ -1,0 +1,14 @@
+x0 = 1
+xn = 5
+n = 4
+m = 3
+xbar = 3
+func = x^4...
+
+
+x0 = 0
+xn = (31 * pi) / 16 = 6.08375
+n = 4
+m = 2
+xbar = pi = 3.14
+func = sin(x) - cos(x)
