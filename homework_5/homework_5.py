@@ -355,67 +355,76 @@ class Application:
             messagebox.showerror("Input Error!", "Enter valid values for p, n and ε.")
             return
 
-        self.text.insert(tk.END, "\n\n\tResults\n")
-
-        # Get the results for the first task.
-        self.text.insert(tk.END, "\n\n\tTask 1\n\n")
+        self.text.insert(tk.END, "\n\n\tResults\n\n")
         self.text.insert(tk.END, f"p = {p}, n = {n}, ε = {eps}\n\n")
 
         randomMatrix = generateRandomMatrix(p)
         self.randomMatrix = randomMatrix
 
-        self.text.insert(tk.END, "Generated Random Matrix:\n\n")
-        self.text.insert(tk.END, np.array2string(randomMatrix.convertToDense(), precision = 4) + "\n\n")
+        matrix = self.matrix
+        symmetric = isSymmetric(matrix)
 
-        if self.matrix:
+        # Get the results for the first task.
+        if p == n and p > 500:
 
-            matrix = self.matrix
-            self.text.insert(tk.END, "Sparse storage:\n")
-            self.text.insert(tk.END, f"  d = {np.array2string(matrix.diagonal,precision = 4)}\n")
+            self.text.insert(tk.END, "\n\n\tTask 1 (p = n; p, n > 500)\n\n")
 
-            for i, row in enumerate(matrix.rows):
-                if row:
-                    self.text.insert(tk.END, f"  row {i}: {row}\n")
-            self.text.insert(tk.END, "\n")
-        else:
-            self.text.insert(tk.END, "A_file not loaded → file storage N/A\n")
+            self.text.insert(tk.END, "Generated Random Matrix:\n\n")
+            self.text.insert(tk.END, np.array2string(randomMatrix.convertToDense(), precision = 4) + "\n\n")
+
+            if self.matrix:
+
+                matrix = self.matrix
+                self.text.insert(tk.END, "Sparse storage:\n")
+                self.text.insert(tk.END, f"  d = {np.array2string(matrix.diagonal,precision = 4)}\n")
+
+                for i, row in enumerate(matrix.rows):
+                    if row:
+                        self.text.insert(tk.END, f"  row {i}: {row}\n")
+                self.text.insert(tk.END, "\n")
+            else:
+                self.text.insert(tk.END, "A_file not loaded → file storage N/A\n")
 
         # Get the results for the second task.
-        self.text.insert(tk.END, "\n\n\tTask 2\n\n")
+        elif p == n and symmetric:
 
-        largestEigenvalue, residual = applyPowerMethod(randomMatrix, eps)
+            self.text.insert(tk.END, "\n\n\tTask 2 (p = n; A - symmetric)\n\n")
 
-        self.text.insert(tk.END, f"Largest Eigenvalue = {largestEigenvalue:.6e}, residual = {residual:.6e}\n")
+            largestEigenvalue, residual = applyPowerMethod(randomMatrix, eps)
 
-        if self.matrix:
+            self.text.insert(tk.END, f"Random Matrix -> Largest Eigenvalue = {largestEigenvalue:.6e}, residual = {residual:.6e}\n")
 
-            matrix = self.matrix
-            symmetric = isSymmetric(matrix)
+            if self.matrix:
 
-            if symmetric:
-                self.text.insert(tk.END, f"It is symmetric!\n")
-                largestEigenvalue, residual = applyPowerMethod(matrix, eps)
-                self.text.insert(tk.END, f"Largest Eigenvalue = {largestEigenvalue:.6e}, residual = {residual:.6e}\n")
+                matrix = self.matrix
+                symmetric = isSymmetric(matrix)
+
+                if symmetric:
+                    self.text.insert(tk.END, f"It is symmetric!\n")
+                    largestEigenvalue, residual = applyPowerMethod(matrix, eps)
+                    self.text.insert(tk.END, f"Read Matrix - Largest Eigenvalue = {largestEigenvalue:.6e}, residual = {residual:.6e}\n")
+                else:
+                    self.text.insert(tk.END, "It is non symmetric!\n")
             else:
-                self.text.insert(tk.END, "It is non symmetric!\n")
-        else:
-            self.text.insert(tk.END, "File Not Loaded!\n\n")
+                self.text.insert(tk.END, "File Not Loaded!\n\n")
 
         # Get the results for the third task.
-        self.text.insert(tk.END, "\n\n\n\tTask 3\n\n")
+        else:
 
-        vector = np.random.randn(p)
+            self.text.insert(tk.END, "\n\n\n\tTask 3 (p > n)\n\n")
 
-        singularValues, matrixRank, conditionNumber, pseudoInverseOfMatrix, leastSquaresSolution, residual = doSvdAnalysis(randomMatrix.convertToDense(), vector, eps)
+            vector = np.random.randn(p)
 
-        self.text.insert(tk.END,
-            f"\nSingular values:\n\n{np.array2string(singularValues, precision = 4)}\n"
-            f"\nMatrix rank:\n\n{matrixRank}\n"
-            f"\nCondition number:\n\n{conditionNumber:.6e}\n"
-            f"\nPseudo inverse:\n\n{pseudoInverseOfMatrix}\n"
-            f"\nLeast squares solution:\n\n{np.array2string(leastSquaresSolution[:min(10, len(leastSquaresSolution))], precision = 4)}\n"
-            f"\nResidual:\n\n{residual:.6e}\n\n"
-        )
+            singularValues, matrixRank, conditionNumber, pseudoInverseOfMatrix, leastSquaresSolution, residual = doSvdAnalysis(randomMatrix.convertToDense(), vector, eps)
+
+            self.text.insert(tk.END,
+                f"\nSingular values:\n\n{np.array2string(singularValues, precision = 4)}\n"
+                f"\nMatrix rank:\n\n{matrixRank}\n"
+                f"\nCondition number:\n\n{conditionNumber:.6e}\n"
+                f"\nPseudo inverse:\n\n{pseudoInverseOfMatrix}\n"
+                f"\nLeast squares solution:\n\n{np.array2string(leastSquaresSolution[:min(10, len(leastSquaresSolution))], precision = 4)}\n"
+                f"\nResidual:\n\n{residual:.6e}\n\n"
+            )
 
 
 
