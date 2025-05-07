@@ -220,7 +220,7 @@ def numeric_grad (F, x, h):
     '''
         Numerical gradient using central difference method.
         Input:
-            - F: function to compute the gradient of
+            - F: function to compute the gradient
             - x: list of floats (point at which to compute the gradient)
             - h: float (step size for finite difference approximation)
         Output:
@@ -272,7 +272,8 @@ def backtracking (F, x, grad, beta, *args):
             - eta: float (step size found by backtracking line search)
     '''
 
-    eta = 1.0; it = 0
+    eta = 1.0
+    it = 0
     fx = F(x)
     norm2 = sum(g*g for g in grad)
 
@@ -430,7 +431,9 @@ class App (tk.Tk):
 
         # initial x
         dim = 2 if name.startswith("F") else len(RL_data[0][0])
+
         x0 = [random.uniform(-5,5) for _ in range(dim)]
+
         sol, iters, conv = gradient_descent(
             F, gradF, x0, eps, kmax, eta0, beta,
             use_numeric=use_num, h=1e-6, constant=const
