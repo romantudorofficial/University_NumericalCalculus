@@ -138,8 +138,9 @@ def newton_type_N5_poly (coeffs, epsilon, kmax, x0):
         if abs(P1) < epsilon:
             return None
         
-        # step 1
+        # step 1 - compute y, which represents the next approximation
         y = x - P / P1
+
         P_y, _, _ = horner_all(coeffs, y)
         num = P * P + P * P_y
         den = P1 * (P - P_y)
@@ -150,6 +151,7 @@ def newton_type_N5_poly (coeffs, epsilon, kmax, x0):
         # step 2
         z = x - num / (2 * den)
         P_z, _, _ = horner_all(coeffs, z)
+        
         # final update
         x_new = z - P_z / P1
 
