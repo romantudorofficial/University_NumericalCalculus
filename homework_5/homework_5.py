@@ -223,7 +223,7 @@ def generateRandomMatrix (matrixSize, density = 0.01):
 
 
 
-def svd_analysis (matrix, vector, epsilon):
+def doSvdAnalysis (matrix, vector, epsilon):
 
     '''
         Performs the SVD (Singular Value Decomposition) analysis on the given matrix and vector.
@@ -258,7 +258,7 @@ def svd_analysis (matrix, vector, epsilon):
     # Get the residual of the least-squares solution.
     residual = np.linalg.norm(vector - matrix @ leastSquaresSolution)
   
-    return singularValues, matrixRank, conditionNumber, leastSquaresSolution, residual
+    return singularValues, matrixRank, conditionNumber, pseudoInverseOfMatrix, leastSquaresSolution, residual
 
 
 
@@ -285,57 +285,66 @@ class Application:
         frame = tk.Frame(root)
         frame.pack(padx = 5, pady = 5, anchor = "w")
 
-        # Get the input values.
-        for idx, (lbl, w) in enumerate ([("p", 6), ("n", 6), ("ε", 8)]):
+        # Set the labels and entry fields for the input values.
+        for labelIndex, (labelName, widthOfField) in enumerate ([("p", 6), ("n", 6), ("ε", 8)]):
 
-            tk.Label(frame, text = lbl + ":").grid(row = 0, column = 2 * idx)
-            ent = tk.Entry(frame, width = w)
-            ent.grid(row = 0, column = 2 * idx + 1)
-            setattr(self, f"ent_{lbl}", ent)
+            tk.Label(frame, text = labelName + ":").grid(row = 0, column = 2 * labelIndex)
+            field = tk.Entry(frame, width = widthOfField)
+            field.grid(row = 0, column = 2 * labelIndex + 1)
+            setattr(self, f"ent_{labelName}", field)
 
         # Set the load file button.
-        tk.Button(frame, text = "Load File", command = self.load_file)\
+        tk.Button(frame, text = "Load File", command = self.loadFile)\
           .grid(row = 1, column = 0, columnspan = 2, pady = 4)
         
         # Set the run button.
-        tk.Button(frame, text = "Run", command = self.run_all, bg = "#aaffaa")\
+        tk.Button(frame, text = "Run", command = self.runTasks, bg = "#aaffaa")\
           .grid(row = 1, column = 2, columnspan = 4, padx = 10, pady = 4)
 
         # Set the output text area.
-        self.txt = scrolledtext.ScrolledText(root, width = 90, height = 25)
-        self.txt.pack(padx = 5, pady = 5)
+        self.text = scrolledtext.ScrolledText(root, width = 90, height = 25)
+        self.text.pack(padx = 5, pady = 5)
 
-        self.M_file = None
-        self.A_rand = None
+        # Set the initial values for the matrices.
+        self.matrix = None
+        self.randomMatrix = None
 
 
-    def load_file (self):
+    def loadFile (self):
 
         '''
-            Load a sparse matrix from a file.
+            Loads a sparse matrix from a file.
+            Input:
+                - none
+            Output:
+                - none
         '''
 
-        f = filedialog.askopenfilename(title="Select sparse A_file (.txt)")
+        file = filedialog.askopenfilename(title = "Select File")
 
-        if not f:
+        if not file:
             return
         
         try:
-            M = readMatrix(f)
-            self.M_file = M
-            self.txt.insert(tk.END, f"\nLoaded File (n={M.size}) from {f}\n\n")
+            matrix = readMatrix(file)
+            self.matrix = matrix
+            self.text.insert(tk.END, f"\nLoaded file (matrix size = {matrix.size}) from \"{file}\".\n\n")
         except Exception as e:
-            messagebox.showerror("Load Error", str(e))
+            messagebox.showerror("Load Error!", str(e))
 
 
-    def run_all (self):
+    def runTasks (self):
 
         '''
-            Run all the calculations and display the results.
+            Runs all the tasks.
+            Input:
+                - none
+            Output:
+                - none
         '''
 
         # Clear the text area.
-        self.txt.delete('1.0', tk.END)
+        self.text.delete('1.0', tk.END)
 
         # Get the input values.
         try:
@@ -343,55 +352,69 @@ class Application:
             n = int(self.ent_n.get())
             eps = float(self.ent_ε.get())
         except:
-            messagebox.showerror("Input Error", "Enter valid p, n, ε.")
+            messagebox.showerror("Input Error!", "Enter valid values for p, n and ε.")
             return
 
-        self.txt.insert(tk.END, "\n=== Run Results ===\n\n")
+        self.text.insert(tk.END, "\n\n\tResults\n")
 
-        # Get the results for the first requirement.
-        self.txt.insert(tk.END, "Requirement 1\n\n")
-        self.txt.insert(tk.END, f"p = {p},  n = {n},  ε = {eps}\n\n")
-        A_r = generateRandomMatrix(p)
-        self.A_rand = A_r
-        self.txt.insert(tk.END, "Generated A_rand (dense):\n")
-        self.txt.insert(tk.END, np.array2string(A_r.convertToDense(), precision=4) + "\n\n")
-        if self.M_file:
-            Mf = self.M_file
-            self.txt.insert(tk.END, "Sparse storage of A_file:\n")
-            self.txt.insert(tk.END, f"  d = {np.array2string(Mf.diagonal,precision=4)}\n")
-            for i,row in enumerate(Mf.rows):
+        # Get the results for the first task.
+        self.text.insert(tk.END, "\n\n\tTask 1\n\n")
+        self.text.insert(tk.END, f"p = {p}, n = {n}, ε = {eps}\n\n")
+
+        randomMatrix = generateRandomMatrix(p)
+        self.randomMatrix = randomMatrix
+
+        self.text.insert(tk.END, "Generated Random Matrix:\n\n")
+        self.text.insert(tk.END, np.array2string(randomMatrix.convertToDense(), precision = 4) + "\n\n")
+
+        if self.matrix:
+
+            matrix = self.matrix
+            self.text.insert(tk.END, "Sparse storage:\n")
+            self.text.insert(tk.END, f"  d = {np.array2string(matrix.diagonal,precision = 4)}\n")
+
+            for i, row in enumerate(matrix.rows):
                 if row:
-                    self.txt.insert(tk.END, f"  row {i}: {row}\n")
-            self.txt.insert(tk.END, "\n")
+                    self.text.insert(tk.END, f"  row {i}: {row}\n")
+            self.text.insert(tk.END, "\n")
         else:
-            self.txt.insert(tk.END, "A_file not loaded → file storage N/A\n\n")
+            self.text.insert(tk.END, "A_file not loaded → file storage N/A\n")
 
-        # Get the results for the second requirement.
-        self.txt.insert(tk.END, "Requirement 2\n\n")
-        lam_r, res_r = applyPowerMethod(A_r, eps)
-        self.txt.insert(tk.END, f"A_rand →    λ_max = {lam_r:.6e},   residual = {res_r:.6e}\n")
-        if self.M_file:
-            Mf = self.M_file
-            sym = isSymmetric(Mf)
-            self.txt.insert(tk.END, f"A_file symmetric? {'Yes' if sym else 'No'}\n")
-            if sym:
-                lam_f, res_f = applyPowerMethod(Mf, eps)
-                self.txt.insert(tk.END, f"A_file →    λ_max = {lam_f:.6e},   residual = {res_f:.6e}\n\n")
+        # Get the results for the second task.
+        self.text.insert(tk.END, "\n\n\tTask 2\n\n")
+
+        largestEigenvalue, residual = applyPowerMethod(randomMatrix, eps)
+
+        self.text.insert(tk.END, f"Largest Eigenvalue = {largestEigenvalue:.6e}, residual = {residual:.6e}\n")
+
+        if self.matrix:
+
+            matrix = self.matrix
+            symmetric = isSymmetric(matrix)
+
+            if symmetric:
+                self.text.insert(tk.END, f"It is symmetric!\n")
+                largestEigenvalue, residual = applyPowerMethod(matrix, eps)
+                self.text.insert(tk.END, f"Largest Eigenvalue = {largestEigenvalue:.6e}, residual = {residual:.6e}\n")
             else:
-                self.txt.insert(tk.END, "Power Method on A_file N/A (non-symmetric)\n\n")
+                self.text.insert(tk.END, "It is non symmetric!\n")
         else:
-            self.txt.insert(tk.END, "A_file not loaded → Req2 file N/A\n\n")
+            self.text.insert(tk.END, "File Not Loaded!\n\n")
 
-        # Get the results for the third requirement.
-        self.txt.insert(tk.END, "Requirement 3\n\n")
-        b = np.random.randn(p)
-        s, rank, cond, xI, res2 = svd_analysis(A_r.convertToDense(), b, eps)
-        self.txt.insert(tk.END,
-            f"Singular values:    {np.array2string(s,precision=4)}\n"
-            f"Rank(A_rand) =      {rank}\n"
-            f"Condition # =       {cond:.6e}\n"
-            f"First 10 entries of x_I: {np.array2string(xI[:min(10,len(xI))],precision=4)}\n"
-            f"‖b - A_rand x_I‖₂ =  {res2:.6e}\n\n"
+        # Get the results for the third task.
+        self.text.insert(tk.END, "\n\n\n\tTask 3\n\n")
+
+        vector = np.random.randn(p)
+
+        singularValues, matrixRank, conditionNumber, pseudoInverseOfMatrix, leastSquaresSolution, residual = doSvdAnalysis(randomMatrix.convertToDense(), vector, eps)
+
+        self.text.insert(tk.END,
+            f"\nSingular values:\n\n{np.array2string(singularValues, precision = 4)}\n"
+            f"\nMatrix rank:\n\n{matrixRank}\n"
+            f"\nCondition number:\n\n{conditionNumber:.6e}\n"
+            f"\nPseudo inverse:\n\n{pseudoInverseOfMatrix}\n"
+            f"\nLeast squares solution:\n\n{np.array2string(leastSquaresSolution[:min(10, len(leastSquaresSolution))], precision = 4)}\n"
+            f"\nResidual:\n\n{residual:.6e}\n\n"
         )
 
 
