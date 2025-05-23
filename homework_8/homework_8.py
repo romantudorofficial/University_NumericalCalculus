@@ -5,7 +5,7 @@
     Email Address: romantudor.contact@gmail.com
     Discord Username: romantudorofficial
     Bibliography: ChatGPT, Lecture Notes
-    LLM Percentile: 35%
+    LLM Percentile: 40%
 '''
 
 import math
@@ -201,7 +201,6 @@ def grad_loglik (w, data):
 
 
 
-# RL.pdf dataset reconstruction
 RL_data = [
     ([1,1,0,0,0], 1),
     ([1,1,0,1,0], 1),
@@ -429,7 +428,6 @@ class App (tk.Tk):
         eps = float(self.eps_ent.get())
         kmax = int(self.kmax_ent.get())
 
-        # initial x
         dim = 2 if name.startswith("F") else len(RL_data[0][0])
 
         x0 = [random.uniform(-5,5) for _ in range(dim)]
